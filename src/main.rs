@@ -1,11 +1,8 @@
-pub mod gateway_protocol {
-    tonic::include_proto!("gateway_protocol");
-}
 use futures::executor::block_on;
-use gateway_protocol::gateway_client::GatewayClient;
-use gateway_protocol::TopologyRequest;
 use std::time::Duration;
 use tonic::transport::{Channel, Error};
+use zeebe_client::gateway_protocol::gateway_client::GatewayClient;
+use zeebe_client::gateway_protocol::TopologyRequest;
 
 use zeebe_client::topology::{PartitionBrokerHealth, PartitionBrokerRole, PartitionInfo};
 use zeebe_client::ZeebeClient;

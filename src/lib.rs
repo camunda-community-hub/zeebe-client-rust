@@ -43,20 +43,6 @@ impl ZeebeClient {
     }
 }
 
-pub fn default_client() -> ZeebeClient {
-    let channel = block_on(
-        Channel::from_static("http://[::1]:26500")
-            //.tls_config(tls)?
-            .connect(),
-    );
-
-    let channel = channel.unwrap();
-
-    let client = GatewayClient::new(channel);
-
-    ZeebeClient { client }
-}
-
 impl gateway_protocol::TopologyResponse {
     fn to_external_representation(&self) -> Topology {
         let brokers = self
