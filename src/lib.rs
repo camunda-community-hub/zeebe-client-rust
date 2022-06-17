@@ -4,15 +4,14 @@ pub mod gateway_protocol {
     tonic::include_proto!("gateway_protocol");
 }
 
+mod mapping;
 pub mod topology;
 
-use crate::topology::{
-    BrokerInfo, PartitionBrokerHealth, PartitionBrokerRole, PartitionInfo, Topology,
-};
 use futures::executor::block_on;
 use gateway_protocol::gateway_client::GatewayClient;
 use gateway_protocol::TopologyRequest;
 use tonic::transport::Channel;
+use topology::{BrokerInfo, PartitionBrokerHealth, PartitionBrokerRole, PartitionInfo, Topology};
 
 pub struct ZeebeClient {
     client: GatewayClient<Channel>,
@@ -37,81 +36,8 @@ impl ZeebeClient {
         let response = self.client.topology(TopologyRequest {}).await;
 
         match response {
-            Ok(response) => Ok(response.into_inner().to_external_representation()),
+            Ok(response) => Ok(mapping::map_topology_response(response.into_inner())),
             Err(e) => Err(e),
-        }
-    }
-}
-
-impl gateway_protocol::TopologyResponse {
-    fn to_external_representation(&self) -> Topology {
-        let brokers = self
-            .brokers
-            .iter()
-            .map(|broker| broker.to_external_representation())
-            .collect::<Vec<BrokerInfo>>();
-
-        Topology {
-            brokers,
-            cluster_size: self.cluster_size,
-            partition_count: self.partitions_count,
-            replication_factor: self.replication_factor,
-            gateway_version: self.gateway_version.clone(),
-        }
-    }
-}
-
-impl gateway_protocol::BrokerInfo {
-    fn to_external_representation(&self) -> BrokerInfo {
-        let partitions = self
-            .partitions
-            .iter()
-            .map(|partition| partition.to_external_representation())
-            .collect::<Vec<PartitionInfo>>();
-
-        BrokerInfo {
-            node_id: self.node_id,
-            host: self.host.clone(),
-            port: self.port,
-            version: self.version.clone(),
-            partitions,
-        }
-    }
-}
-
-impl gateway_protocol::Partition {
-    fn to_external_representation(&self) -> PartitionInfo {
-        PartitionInfo {
-            partition_id: self.partition_id,
-            role: match gateway_protocol::partition::PartitionBrokerRole::from_i32(self.role) {
-                Some(gateway_protocol::partition::PartitionBrokerRole::Leader) => {
-                    PartitionBrokerRole::LEADER
-                }
-                Some(gateway_protocol::partition::PartitionBrokerRole::Follower) => {
-                    PartitionBrokerRole::FOLLOWER
-                }
-                Some(gateway_protocol::partition::PartitionBrokerRole::Inactive) => {
-                    PartitionBrokerRole::INACTIVE
-                }
-                other => {
-                    panic!("Unknown value {:?}", other);
-                }
-            },
-            health: match gateway_protocol::partition::PartitionBrokerHealth::from_i32(self.health)
-            {
-                Some(gateway_protocol::partition::PartitionBrokerHealth::Healthy) => {
-                    PartitionBrokerHealth::HEALTHY
-                }
-                Some(gateway_protocol::partition::PartitionBrokerHealth::Unhealthy) => {
-                    PartitionBrokerHealth::UNHEALTHY
-                }
-                Some(gateway_protocol::partition::PartitionBrokerHealth::Dead) => {
-                    PartitionBrokerHealth::DEAD
-                }
-                other => {
-                    panic!("Unknown value {:?}", other);
-                }
-            },
         }
     }
 }
