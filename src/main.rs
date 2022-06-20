@@ -1,6 +1,6 @@
 use futures::executor::block_on;
 use std::time::Duration;
-use tonic::transport::{Channel, Error};
+use tonic::transport::Channel;
 use zeebe_client::gateway_protocol::gateway_client::GatewayClient;
 use zeebe_client::gateway_protocol::TopologyRequest;
 
@@ -25,16 +25,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect()
         .await?;
 
-    let client = GatewayClient::new(channel);
+    let grpc_client = GatewayClient::new(channel);
 
 
 
     let zeebe_client = ZeebeClient::default_client();
 
-    println!("Topology request - pure GRPC");
-    get_topology_pure_grpc(client).await?;
-
-    println!("Topology request - API");
+    // topology
+    get_topology_pure_grpc(grpc_client);    
     get_topology_api(zeebe_client);
 
     
@@ -43,25 +41,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 
-async fn get_topology_pure_grpc(mut client : GatewayClient<Channel>) -> Result<bool, Error> {
+fn get_topology_pure_grpc(mut client : GatewayClient<Channel>) {
+    println!("Topology request - pure GRPC");
+
     let mut request = tonic::Request::new(TopologyRequest {});
     request.set_timeout(Duration::from_secs(1));
 
-    let response = client.topology(request).await;
+    let response = block_on(client.topology(request));
 
     match response {
         Ok(response) => {
             let topology = response.into_inner();
             println!("SUMMARY: {:?}", topology);
         }
-        Err(e) => println!("something went wrong: {:?}", e),
+        Err(status) =>  {
+            println!("something went wrong: {:?}", status)
+        }
     }
-
-    Ok(true)
 }
 
 fn get_topology_api(mut zeebe_client: ZeebeClient) {
+    println!("Topology request - API");
+
     let topology = block_on(zeebe_client.topology());
 
-    println!("SUMMARY: {:?}", topology);
+    match topology {
+        Ok(topology) => println!("SUMMARY: {:?}", topology),
+        Err(status) => println!("something went wrong: {:?}", status)
+    }
 }
+
+
+
