@@ -4,31 +4,10 @@ use tonic::transport::{Channel, Error};
 use zeebe_client::gateway_protocol::gateway_client::GatewayClient;
 use zeebe_client::gateway_protocol::TopologyRequest;
 
-use zeebe_client::topology::{PartitionBrokerHealth, PartitionBrokerRole, PartitionInfo};
 use zeebe_client::ZeebeClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let zeebe_client = ZeebeClient::default_client();
-
-    println!("Topology request - pure GRPC");
-    get_topology_pure_grpc().await?;
-
-    println!("Topology request - API");
-    get_topology_api(zeebe_client);
-
-    let part = PartitionInfo {
-        partition_id: 0,
-        role: PartitionBrokerRole::LEADER,
-        health: PartitionBrokerHealth::HEALTHY,
-    };
-
-    println!("{:?}", part);
-
-    Ok(())
-}
-
-async fn get_topology_pure_grpc() -> Result<bool, Error> {
     //let server_root_ca_cert = tokio::fs::read("examples/data/tls/ca.pem").await?;
     //let server_root_ca_cert = Certificate::from_pem(server_root_ca_cert);
     //let client_cert = tokio::fs::read("examples/data/tls/client1.pem").await?;
@@ -46,8 +25,25 @@ async fn get_topology_pure_grpc() -> Result<bool, Error> {
         .connect()
         .await?;
 
-    let mut client = GatewayClient::new(channel);
+    let client = GatewayClient::new(channel);
 
+
+
+    let zeebe_client = ZeebeClient::default_client();
+
+    println!("Topology request - pure GRPC");
+    get_topology_pure_grpc(client).await?;
+
+    println!("Topology request - API");
+    get_topology_api(zeebe_client);
+
+    
+
+    Ok(())
+}
+
+
+async fn get_topology_pure_grpc(mut client : GatewayClient<Channel>) -> Result<bool, Error> {
     let mut request = tonic::Request::new(TopologyRequest {});
     request.set_timeout(Duration::from_secs(1));
 
