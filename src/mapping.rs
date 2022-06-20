@@ -1,3 +1,5 @@
+use crate::deploy::Metadata;
+
 use super::*;
 
 pub fn map_topology_response(response: gateway_protocol::TopologyResponse) -> Topology {
@@ -5,7 +7,7 @@ pub fn map_topology_response(response: gateway_protocol::TopologyResponse) -> To
         .brokers
         .iter()
         .map(|broker| map_broker_info(broker))
-        .collect::<Vec<BrokerInfo>>();
+        .collect();
 
     Topology {
         brokers,
@@ -16,12 +18,28 @@ pub fn map_topology_response(response: gateway_protocol::TopologyResponse) -> To
     }
 }
 
+pub fn map_deploy_resource_response(
+    response: gateway_protocol::DeployResourceResponse,
+) -> DeployResourceResponse {
+    let deployments = response
+        .deployments
+        .iter()
+        .map(|deployment| deployment.metadata.to_owned())
+        .map(|opt_metadata| opt_metadata.map(|metadata| map_metadata(metadata)))
+        .collect();
+
+    DeployResourceResponse {
+        key: response.key,
+        deployments,
+    }
+}
+
 fn map_broker_info(broker_info: &gateway_protocol::BrokerInfo) -> BrokerInfo {
     let partitions = broker_info
         .partitions
         .iter()
         .map(|partition| map_partition(partition))
-        .collect::<Vec<PartitionInfo>>();
+        .collect();
 
     BrokerInfo {
         node_id: broker_info.node_id,
@@ -64,5 +82,39 @@ fn map_partition(partition: &gateway_protocol::Partition) -> PartitionInfo {
                 panic!("Unknown value {:?}", partition.health);
             }
         },
+    }
+}
+
+fn map_metadata(metadata: gateway_protocol::deployment::Metadata) -> Metadata {
+    match metadata {
+        gateway_protocol::deployment::Metadata::Process(process_metadata) => {
+            Metadata::Process(deploy::ProcessMetadata {
+                bpmn_process_id: process_metadata.bpmn_process_id,
+                version: process_metadata.version,
+                process_definition_key: process_metadata.process_definition_key,
+                resource_name: process_metadata.resource_name,
+            })
+        }
+        gateway_protocol::deployment::Metadata::Decision(decision_metadata) => {
+            Metadata::Decision(deploy::DecisionMetadata {
+                dmn_decision_id: decision_metadata.dmn_decision_id,
+                dmn_decision_name: decision_metadata.dmn_decision_name,
+                version: decision_metadata.version,
+                decision_key: decision_metadata.decision_key,
+                dmn_decision_requirements_id: decision_metadata.dmn_decision_requirements_id,
+                decision_requirements_key: decision_metadata.decision_requirements_key,
+            })
+        }
+        gateway_protocol::deployment::Metadata::DecisionRequirements(
+            decision_requirements_metadata,
+        ) => Metadata::DecisionRequirements(deploy::DecisionRequirementsMetadata {
+            dmn_decision_requirements_id: decision_requirements_metadata
+                .dmn_decision_requirements_id,
+            dmn_decision_requirements_name: decision_requirements_metadata
+                .dmn_decision_requirements_name,
+            version: decision_requirements_metadata.version,
+            decision_requirements_key: decision_requirements_metadata.decision_requirements_key,
+            resource_name: decision_requirements_metadata.resource_name,
+        }),
     }
 }

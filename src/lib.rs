@@ -4,12 +4,18 @@ pub mod gateway_protocol {
     tonic::include_proto!("gateway_protocol");
 }
 
+pub mod deploy;
 mod mapping;
 pub mod topology;
 
+use deploy::DeployResourceResponse;
 use futures::executor::block_on;
 use gateway_protocol::gateway_client::GatewayClient;
+use gateway_protocol::DeployResourceRequest;
 use gateway_protocol::TopologyRequest;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use tonic::transport::Channel;
 use topology::{BrokerInfo, PartitionBrokerHealth, PartitionBrokerRole, PartitionInfo, Topology};
 
@@ -35,9 +41,32 @@ impl ZeebeClient {
     pub async fn topology(&mut self) -> Result<Topology, tonic::Status> {
         let response = self.client.topology(TopologyRequest {}).await;
 
-        match response {
-            Ok(response) => Ok(mapping::map_topology_response(response.into_inner())),
-            Err(e) => Err(e),
-        }
+        return response.map(|response| mapping::map_topology_response(response.into_inner()));
     }
+
+    pub async fn deploy_resources(&mut self,
+        resources: Vec<&Path>
+    ) -> Result<DeployResourceResponse, tonic::Status> {
+        let resources = resources.iter().map(|file| new_resource(file)).collect();
+
+        let request = DeployResourceRequest {
+            resources
+        };
+
+        let response= self.client.deploy_resource(request).await;
+
+        return response.map(|response| mapping::map_deploy_resource_response(response.into_inner()));
+    }
+}
+
+fn new_resource(filename: &Path) -> gateway_protocol::Resource {
+    let name = filename.file_name().unwrap().to_str().unwrap().to_string();
+
+    let mut f = File::open(filename).expect("File not found");
+    let mut content = Vec::new();
+
+    // read the whole file
+    f.read_to_end(&mut content).expect("Error on read");
+
+    gateway_protocol::Resource { name, content }
 }

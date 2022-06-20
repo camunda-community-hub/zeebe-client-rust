@@ -11,6 +11,8 @@ use zeebe_client::gateway_protocol::TopologyRequest;
 
 use zeebe_client::ZeebeClient;
 
+const START_END_PROCESS_FILE: &'static str = "resources/start-end.bpmn";
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let server_root_ca_cert = tokio::fs::read("examples/data/tls/ca.pem").await?;
@@ -40,6 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // deploy process
     deploy_resource_pure_grpc(&mut grpc_client);
+    deploy_resource_api(&mut zeebe_client);
 
     Ok(())
 }
@@ -75,9 +78,9 @@ fn get_topology_api(zeebe_client: &mut ZeebeClient) {
 }
 
 fn deploy_resource_pure_grpc(client: &mut GatewayClient<Channel>) {
-    println!("Deploy process request - pure GRPC");
+    println!("Deploy resource request - pure GRPC");
 
-    let resource_definition = new_resource(Path::new("resources/start-end.bpmn"));
+    let resource_definition = new_resource(Path::new(START_END_PROCESS_FILE));
 
     let resources = vec![resource_definition];
 
@@ -111,4 +114,15 @@ fn new_resource(filename: &Path) -> Resource {
     let content = get_file_as_byte_vec(filename);
 
     Resource { name, content }
+}
+
+fn deploy_resource_api(zeebe_client: &mut ZeebeClient) {
+    println!("Deploy resource request - API");
+
+    let response = block_on(zeebe_client.deploy_resources(vec![Path::new(START_END_PROCESS_FILE)]));
+
+    match response {
+        Ok(topology) => println!("SUMMARY: {:?}", topology),
+        Err(status) => println!("something went wrong: {:?}", status),
+    }
 }
