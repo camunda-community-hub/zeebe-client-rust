@@ -6,3 +6,12 @@
 
 # Zeebe Rust Client
 Rust client for Zeebe
+
+In very early stages.
+
+## Prior Work/Alternatives
+
+These repositories also implement Zeebe clients for Rust. Most of them are more feature-complete than this repository currently, but also a little older.
+* https://github.com/camunda-community-hub/zeebest
+* https://github.com/OutThereLabs/zeebe-rust
+* https://github.com/xmclark/zeebe-client-rust-1
