@@ -19,5 +19,8 @@ jobs:
           default: true
           override: true
 
+      - name: Cache
+        uses: Swatinem/rust-cache@v1.4.0
+
       - name: Build
         run: cargo build
