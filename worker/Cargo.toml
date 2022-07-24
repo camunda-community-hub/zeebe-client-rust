@@ -1,0 +1,9 @@
+[package]
+name = "zeebe-worker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zeebe-client = { path = "../client" }
+tonic = "0.7"
+tokio = { version = "1", features=["full"] }
