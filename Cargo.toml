@@ -1,15 +1,6 @@
-[package]
-name = "zeebe_client"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-tonic = "0.7"
-prost = "0.10"
-tokio = { version = "1.20", features = ["macros", "rt-multi-thread"] }
-futures = "0.3"
-
-[build-dependencies]
-tonic-build = "0.7"
+[workspace]
+members = [
+    "client",
+    "cli",
+    "worker",
+]
