@@ -9,5 +9,5 @@ prost = "0.10"
 thiserror = "1.0"
 
 [build-dependencies]
-tonic-build = "0.7"
+tonic-build = "0.8"
 prost-build = "0.11"
