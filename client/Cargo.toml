@@ -10,4 +10,4 @@ thiserror = "1.0"
 
 [build-dependencies]
 tonic-build = "0.7"
-prost-build = "0.10"
+prost-build = "0.11"
