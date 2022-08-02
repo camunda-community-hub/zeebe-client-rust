@@ -73,7 +73,7 @@ async fn main() -> Result<()> {
         Commands::Status => Box::new(client.topology(TopologyRequest {}).await?.into_inner()),
         Commands::Deploy(args) => Box::new(
             client
-                .deploy_resource(deploy_request(args)?)
+                .deploy_resource(build_deploy_request(args)?)
                 .await?
                 .into_inner(),
         ),
@@ -84,8 +84,8 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn deploy_request(args: DeployArgs) -> Result<DeployResourceRequest> {
-    let mut resoures = Vec::with_capacity(args.resources.len());
+fn build_deploy_request(args: DeployArgs) -> Result<DeployResourceRequest> {
+    let mut resources = Vec::with_capacity(args.resources.len());
     for path in &args.resources {
         let resource = Resource {
             name: path
@@ -96,9 +96,7 @@ fn deploy_request(args: DeployArgs) -> Result<DeployResourceRequest> {
                 .to_string(),
             content: std::fs::read(path)?,
         };
-        resoures.push(resource);
+        resources.push(resource);
     }
-    Ok(DeployResourceRequest {
-        resources: resoures,
-    })
+    Ok(DeployResourceRequest { resources })
 }
