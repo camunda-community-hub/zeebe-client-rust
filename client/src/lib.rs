@@ -7,8 +7,12 @@ use tonic::{
     transport::{self, Channel, Uri},
 };
 
-pub mod api {
+mod generated_api {
     tonic::include_proto!("gateway_protocol");
+}
+
+pub mod api {
+    pub use super::generated_api::*;
 }
 
 pub enum Connection {
