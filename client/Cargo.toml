@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tonic = "0.7"
+tonic = "0.8"
 prost = "0.10"
 thiserror = "1.0"
 
