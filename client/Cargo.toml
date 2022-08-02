@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tonic = "0.7"
-prost = "0.10"
+tonic = "0.8"
+prost = "0.11"
 thiserror = "1.0"
 
 [build-dependencies]
