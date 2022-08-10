@@ -1,9 +1,10 @@
+mod auth;
 use std::str::FromStr;
 
-use api::gateway_client::GatewayClient;
+use auth::AuthInterceptor;
 use thiserror::Error;
 use tonic::{
-    codegen::http::uri::InvalidUri,
+    codegen::{http::uri::InvalidUri, InterceptedService},
     transport::{self, Channel, Uri},
 };
 
@@ -33,7 +34,10 @@ pub enum ConnectionError {
     Uri(#[from] InvalidUri),
 }
 
-pub async fn connect(conn: Connection) -> Result<GatewayClient<Channel>, ConnectionError> {
+pub type ZeebeClient =
+    api::gateway_client::GatewayClient<InterceptedService<Channel, AuthInterceptor>>;
+
+pub async fn connect(conn: Connection) -> Result<ZeebeClient, ConnectionError> {
     let uri = match conn {
         Connection::Address(addr) => Uri::from_str(&addr),
         Connection::HostPort(proto, host, port) => {
@@ -41,5 +45,8 @@ pub async fn connect(conn: Connection) -> Result<GatewayClient<Channel>, Connect
         }
     }?;
     let channel = Channel::builder(uri);
-    Ok(GatewayClient::new(channel.connect().await?))
+    Ok(api::gateway_client::GatewayClient::with_interceptor(
+        channel.connect().await?,
+        AuthInterceptor {},
+    ))
 }

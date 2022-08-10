@@ -2,8 +2,7 @@ use color_eyre::eyre::Result;
 use std::fmt::Debug;
 
 use clap::Args;
-use tonic::transport::Channel;
-use zeebe_client::api::{gateway_client::GatewayClient, FailJobRequest};
+use zeebe_client::{api::FailJobRequest, ZeebeClient};
 
 #[derive(Args)]
 pub struct FailJobArgs {
@@ -35,7 +34,7 @@ impl From<&FailJobArgs> for FailJobRequest {
 }
 
 pub async fn handle_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &FailJobArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: FailJobRequest = args.into();

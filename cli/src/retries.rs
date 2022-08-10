@@ -2,8 +2,8 @@ use crate::Debug;
 
 use clap::Args;
 use color_eyre::Result;
-use tonic::transport::Channel;
-use zeebe_client::api::{gateway_client::GatewayClient, UpdateJobRetriesRequest};
+
+use zeebe_client::{api::UpdateJobRetriesRequest, ZeebeClient};
 
 #[derive(Args)]
 pub(crate) struct UpdateRetriesArgs {
@@ -26,7 +26,7 @@ impl TryFrom<&UpdateRetriesArgs> for UpdateJobRetriesRequest {
 }
 
 pub(crate) async fn handle_set_retries_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &UpdateRetriesArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: UpdateJobRetriesRequest = args.try_into()?;

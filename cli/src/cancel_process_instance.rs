@@ -2,8 +2,8 @@ use color_eyre::eyre::Result;
 use std::fmt::Debug;
 
 use clap::Args;
-use tonic::transport::Channel;
-use zeebe_client::api::{gateway_client::GatewayClient, CancelProcessInstanceRequest};
+
+use zeebe_client::{api::CancelProcessInstanceRequest, ZeebeClient};
 
 #[derive(Args)]
 pub struct CancelProcessInstanceArgs {
@@ -19,7 +19,7 @@ impl From<&CancelProcessInstanceArgs> for CancelProcessInstanceRequest {
 }
 
 pub async fn handle_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &CancelProcessInstanceArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: CancelProcessInstanceRequest = args.into();

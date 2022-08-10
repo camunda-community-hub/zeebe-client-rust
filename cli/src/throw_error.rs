@@ -2,8 +2,8 @@ use color_eyre::eyre::Result;
 use std::fmt::Debug;
 
 use clap::Args;
-use tonic::transport::Channel;
-use zeebe_client::api::{gateway_client::GatewayClient, ThrowErrorRequest};
+
+use zeebe_client::{api::ThrowErrorRequest, ZeebeClient};
 
 #[derive(Args)]
 pub struct ThrowErrorArgs {
@@ -29,7 +29,7 @@ impl From<&ThrowErrorArgs> for ThrowErrorRequest {
 }
 
 pub async fn handle_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &ThrowErrorArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: ThrowErrorRequest = args.into();

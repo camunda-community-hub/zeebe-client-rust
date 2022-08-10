@@ -1,8 +1,7 @@
 use crate::Debug;
 use clap::{Args, Subcommand};
 use color_eyre::Result;
-use tonic::transport::Channel;
-use zeebe_client::api::{gateway_client::GatewayClient, ActivateJobsRequest};
+use zeebe_client::{api::ActivateJobsRequest, ZeebeClient};
 
 #[derive(Args)]
 pub(crate) struct ActivateArgs {
@@ -41,7 +40,7 @@ impl From<&ActivateJobsArgs> for ActivateJobsRequest {
 }
 
 pub(crate) async fn handle_activate_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &ActivateArgs,
 ) -> Result<Box<dyn Debug>> {
     match &args.resource_type {
@@ -50,7 +49,7 @@ pub(crate) async fn handle_activate_command(
 }
 
 async fn handle_activate_jobs_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &ActivateJobsArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: ActivateJobsRequest = args.into();

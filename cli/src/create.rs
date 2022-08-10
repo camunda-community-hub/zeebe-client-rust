@@ -1,10 +1,10 @@
 use crate::Debug;
 use clap::{Args, Subcommand};
 use color_eyre::eyre::Result;
-use tonic::transport::Channel;
-use zeebe_client::api::{
-    gateway_client::GatewayClient, CreateProcessInstanceRequest,
-    CreateProcessInstanceWithResultRequest,
+
+use zeebe_client::{
+    api::{CreateProcessInstanceRequest, CreateProcessInstanceWithResultRequest},
+    ZeebeClient,
 };
 
 #[derive(Args, Clone, Debug)]
@@ -31,7 +31,7 @@ struct CreateInstanceArgs {
 }
 
 pub(crate) async fn handle_create_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &CreateArgs,
 ) -> Result<Box<dyn Debug>> {
     match &args.resource_type {
@@ -52,7 +52,7 @@ impl From<&CreateInstanceArgs> for CreateProcessInstanceRequest {
 }
 
 async fn handle_create_instance_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &CreateInstanceArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: CreateProcessInstanceRequest = args.into();

@@ -2,8 +2,8 @@ use color_eyre::eyre::Result;
 use std::fmt::Debug;
 
 use clap::{Args, Subcommand};
-use tonic::transport::Channel;
-use zeebe_client::api::{gateway_client::GatewayClient, PublishMessageRequest};
+
+use zeebe_client::{api::PublishMessageRequest, ZeebeClient};
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct PublishArgs {
@@ -42,7 +42,7 @@ impl From<&PublishMessageArgs> for PublishMessageRequest {
 }
 
 pub(crate) async fn handle_publish_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &PublishArgs,
 ) -> Result<Box<dyn Debug>> {
     match &args.resource_type {
@@ -51,7 +51,7 @@ pub(crate) async fn handle_publish_command(
 }
 
 async fn handle_publish_message_command(
-    client: &mut GatewayClient<Channel>,
+    client: &mut ZeebeClient,
     args: &PublishMessageArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: PublishMessageRequest = args.into();
