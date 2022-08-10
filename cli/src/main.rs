@@ -1,4 +1,5 @@
 mod create;
+mod publish;
 
 use std::{fmt::Debug, path::PathBuf};
 
@@ -59,6 +60,7 @@ enum Commands {
     CancelProcessInstance(CancelProcessInstanceArgs),
     FailJob(FailJobArgs),
     Create(create::CreateArgs),
+    Publish(publish::PublishArgs),
 }
 
 #[derive(Args)]
@@ -150,6 +152,7 @@ async fn main() -> Result<()> {
                 .into_inner(),
         ),
         Commands::Create(args) => create::handle_create_command(&mut client, &args).await?,
+        Commands::Publish(args) => publish::handle_publish_command(&mut client, &args).await?,
     };
 
     println!("{:#?}", response);
