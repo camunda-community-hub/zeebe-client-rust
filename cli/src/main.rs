@@ -1,6 +1,7 @@
 mod activate;
 mod cancel_process_instance;
 mod create;
+mod fail_job;
 mod publish;
 mod retries;
 mod set_variables;
@@ -14,8 +15,8 @@ use color_eyre::eyre::Result;
 use set_variables::SetVariablesArgs;
 use zeebe_client::{
     api::{
-        DeployResourceRequest, FailJobRequest,
-        ResolveIncidentRequest, Resource, SetVariablesRequest, TopologyRequest,
+        DeployResourceRequest, ResolveIncidentRequest, Resource, SetVariablesRequest,
+        TopologyRequest,
     },
     Protocol,
 };
@@ -64,7 +65,7 @@ enum Commands {
     Deploy(DeployArgs),
     ResolveIncident(IncidentArgs),
     CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
-    FailJob(FailJobArgs),
+    FailJob(fail_job::FailJobArgs),
     Create(create::CreateArgs),
     Publish(publish::PublishArgs),
     UpdateRetries(retries::UpdateRetriesArgs),
@@ -82,24 +83,6 @@ struct DeployArgs {
 #[derive(Args)]
 struct IncidentArgs {
     incident_key: i64,
-}
-
-#[derive(Args)]
-struct FailJobArgs {
-    // the unique job identifier, as obtained when activating the job
-    #[clap(required = true, short, long)]
-    job_key: i64,
-    // the amount of retries the job should have left
-    #[clap(required = true, short, long)]
-    retries: i32,
-    // an optional message describing why the job failed
-    // this is particularly useful if a job runs out of retries and an incident is raised,
-    // as it this message can help explain why an incident was raised
-    #[clap(required = false, short, long, default_value = "")]
-    error_message: String,
-    // the back off timeout for the next retry
-    #[clap(required = false, short = 'b', long, default_value = "0")]
-    retry_back_off: i64,
 }
 
 impl From<Connection> for zeebe_client::Connection {
@@ -140,17 +123,7 @@ async fn main() -> Result<()> {
         Commands::CancelProcessInstance(args) => {
             cancel_process_instance::handle_command(&mut client, &args).await?
         }
-        Commands::FailJob(args) => Box::new(
-            client
-                .fail_job(FailJobRequest {
-                    job_key: args.job_key,
-                    retries: args.retries,
-                    error_message: args.error_message,
-                    retry_back_off: args.retry_back_off,
-                })
-                .await?
-                .into_inner(),
-        ),
+        Commands::FailJob(args) => fail_job::handle_command(&mut client, &args).await?,
         Commands::Create(args) => create::handle_create_command(&mut client, &args).await?,
         Commands::Publish(args) => publish::handle_publish_command(&mut client, &args).await?,
         Commands::UpdateRetries(args) => {
