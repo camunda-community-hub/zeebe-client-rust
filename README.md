@@ -13,5 +13,8 @@ In very early stages.
 
 These repositories also implement Zeebe clients for Rust. Most of them are more feature-complete than this repository currently, but also a little older.
 * https://github.com/camunda-community-hub/zeebest
-* https://github.com/OutThereLabs/zeebe-rust
 * https://github.com/xmclark/zeebe-client-rust-1
+* https://github.com/OutThereLabs/zeebe-rust
+
+Your best choice is probably: https://github.com/OutThereLabs/zeebe-rust
+
