@@ -1,4 +1,5 @@
 mod activate;
+mod cancel_process_instance;
 mod create;
 mod publish;
 mod retries;
@@ -13,7 +14,7 @@ use color_eyre::eyre::Result;
 use set_variables::SetVariablesArgs;
 use zeebe_client::{
     api::{
-        CancelProcessInstanceRequest, DeployResourceRequest, FailJobRequest,
+        DeployResourceRequest, FailJobRequest,
         ResolveIncidentRequest, Resource, SetVariablesRequest, TopologyRequest,
     },
     Protocol,
@@ -62,7 +63,7 @@ enum Commands {
     Status,
     Deploy(DeployArgs),
     ResolveIncident(IncidentArgs),
-    CancelProcessInstance(CancelProcessInstanceArgs),
+    CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
     FailJob(FailJobArgs),
     Create(create::CreateArgs),
     Publish(publish::PublishArgs),
@@ -81,11 +82,6 @@ struct DeployArgs {
 #[derive(Args)]
 struct IncidentArgs {
     incident_key: i64,
-}
-
-#[derive(Args)]
-struct CancelProcessInstanceArgs {
-    process_instance_key: i64,
 }
 
 #[derive(Args)]
@@ -141,14 +137,9 @@ async fn main() -> Result<()> {
                 .await?
                 .into_inner(),
         ),
-        Commands::CancelProcessInstance(args) => Box::new(
-            client
-                .cancel_process_instance(CancelProcessInstanceRequest {
-                    process_instance_key: args.process_instance_key,
-                })
-                .await?
-                .into_inner(),
-        ),
+        Commands::CancelProcessInstance(args) => {
+            cancel_process_instance::handle_command(&mut client, &args).await?
+        }
         Commands::FailJob(args) => Box::new(
             client
                 .fail_job(FailJobRequest {
