@@ -12,11 +12,10 @@ use set_variables::SetVariablesArgs;
 use zeebe_client::{
     api::{
         CancelProcessInstanceRequest, DeployResourceRequest, FailJobRequest,
-        ResolveIncidentRequest, Resource, TopologyRequest, SetVariablesRequest,
+        ResolveIncidentRequest, Resource, SetVariablesRequest, TopologyRequest,
     },
     Protocol,
 };
-
 
 #[derive(Parser)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
@@ -126,7 +125,7 @@ async fn main() -> Result<()> {
         Commands::Status => Box::new(client.topology(TopologyRequest {}).await?.into_inner()),
         Commands::Deploy(args) => Box::new(
             client
-                .deploy_resource(TryInto::<DeployResourceRequest>::try_into(args)?)
+                .deploy_resource(DeployResourceRequest::try_from(&args)?)
                 .await?
                 .into_inner(),
         ),
@@ -165,7 +164,7 @@ async fn main() -> Result<()> {
 
         Commands::SetVariables(arg) => Box::new(
             client
-                .set_variables(TryInto::<SetVariablesRequest>::try_into(arg)?)
+                .set_variables(SetVariablesRequest::try_from(arg)?)
                 .await?
                 .into_inner(),
         ),
@@ -176,12 +175,12 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-impl TryInto<DeployResourceRequest> for DeployArgs {
+impl TryFrom<&DeployArgs> for DeployResourceRequest {
     type Error = color_eyre::Report;
 
-    fn try_into(self) -> Result<DeployResourceRequest, Self::Error> {
-        let mut resources = Vec::with_capacity(self.resources.len());
-        for path in &self.resources {
+    fn try_from(args: &DeployArgs) -> Result<DeployResourceRequest, Self::Error> {
+        let mut resources = Vec::with_capacity(args.resources.len());
+        for path in &args.resources {
             let resource = Resource {
                 name: path
                     .file_name()
@@ -193,6 +192,6 @@ impl TryInto<DeployResourceRequest> for DeployArgs {
             };
             resources.push(resource);
         }
-        Ok(DeployResourceRequest { resources })
+        Ok(Self { resources })
     }
 }

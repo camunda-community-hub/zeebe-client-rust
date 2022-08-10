@@ -15,21 +15,21 @@ pub struct SetVariablesArgs {
     json: Option<String>,
 }
 
-impl TryInto<SetVariablesRequest> for SetVariablesArgs {
+impl TryFrom<SetVariablesArgs> for SetVariablesRequest {
     type Error = color_eyre::Report;
 
-    fn try_into(self) -> Result<SetVariablesRequest, Self::Error> {
-        let variables = if let Some(path) = self.path {
+    fn try_from(args: SetVariablesArgs) -> Result<SetVariablesRequest, Self::Error> {
+        let variables = if let Some(path) = &args.path {
             std::fs::read_to_string(path)?
-        } else if let Some(json) = self.json {
+        } else if let Some(json) = args.json {
             json
         } else {
             unreachable!()
         };
-        Ok(SetVariablesRequest {
-            element_instance_key: self.element_instance_key,
+        Ok(Self {
+            element_instance_key: args.element_instance_key,
             variables,
-            local: self.local,
+            local: args.local,
         })
     }
 }
