@@ -5,7 +5,7 @@ use zeebe_client::api::SetVariablesRequest;
 
 #[derive(Args)]
 
-pub struct SetVariablesArgs {
+pub(crate) struct SetVariablesArgs {
     element_instance_key: i64,
     #[clap(long)]
     local: bool,

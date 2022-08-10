@@ -20,7 +20,7 @@ enum CreateResourceType {
 
 #[derive(Args, Clone, Debug)]
 struct CreateInstanceArgs {
-    process: String,
+    process: i64,
 
     #[clap(long, required = false)]
     with_results: bool,
@@ -40,9 +40,9 @@ pub(crate) async fn handle_create_command(
 }
 
 impl From<&CreateInstanceArgs> for CreateProcessInstanceRequest {
-    fn from(args: &CreateInstanceArgs) -> CreateProcessInstanceRequest {
+    fn from(args: &CreateInstanceArgs) -> Self {
         CreateProcessInstanceRequest {
-            process_definition_key: args.process.parse().unwrap(),
+            process_definition_key: args.process,
             bpmn_process_id: String::new(),
             version: args.version,
             variables: args.variables.clone(),
