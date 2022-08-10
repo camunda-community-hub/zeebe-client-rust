@@ -18,11 +18,11 @@ pub mod api {
 #[derive(Debug)]
 pub enum Protocol {
     HTTPS,
-    HTTP
+    HTTP,
 }
 pub enum Connection {
     Address(String),
-    HostPort(Protocol,String, u16),
+    HostPort(Protocol, String, u16),
 }
 
 #[derive(Error, Debug)]
@@ -36,7 +36,9 @@ pub enum ConnectionError {
 pub async fn connect(conn: Connection) -> Result<GatewayClient<Channel>, ConnectionError> {
     let uri = match conn {
         Connection::Address(addr) => Uri::from_str(&addr),
-        Connection::HostPort(proto, host, port) => Uri::from_str(&format!("{:?}://{}:{}", proto, host, port)),
+        Connection::HostPort(proto, host, port) => {
+            Uri::from_str(&format!("{:?}://{}:{}", proto, host, port))
+        }
     }?;
     let channel = Channel::builder(uri);
     Ok(GatewayClient::new(channel.connect().await?))
