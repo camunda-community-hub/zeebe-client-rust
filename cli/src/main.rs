@@ -3,6 +3,7 @@ mod create;
 mod publish;
 mod retries;
 mod set_variables;
+mod throw_error;
 
 use std::{fmt::Debug, path::PathBuf};
 
@@ -68,6 +69,7 @@ enum Commands {
     UpdateRetries(retries::UpdateRetriesArgs),
     SetVariables(SetVariablesArgs),
     Activate(activate::ActivateArgs),
+    ThrowError(throw_error::ThrowErrorArgs),
 }
 
 #[derive(Args)]
@@ -171,6 +173,7 @@ async fn main() -> Result<()> {
                 .into_inner(),
         ),
         Commands::Activate(args) => activate::handle_activate_command(&mut client, &args).await?,
+        Commands::ThrowError(args) => throw_error::handle_command(&mut client, &args).await?,
     };
 
     println!("{:#?}", response);
