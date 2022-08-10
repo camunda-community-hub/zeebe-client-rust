@@ -1,11 +1,17 @@
-use crate::Debug;
+use crate::{Debug, ExecuteZeebeCommand};
 
+use async_trait::async_trait;
 use clap::Args;
 use color_eyre::Result;
+use tonic::{
+    client::GrpcService,
+    codegen::{Body, Bytes, StdError},
+};
+use zeebe_client::api::{
+    gateway_client::GatewayClient, UpdateJobRetriesRequest, UpdateJobRetriesResponse,
+};
 
-use zeebe_client::{api::UpdateJobRetriesRequest, ZeebeClient};
-
-#[derive(Args)]
+#[derive(Debug, Args)]
 pub(crate) struct UpdateRetriesArgs {
     #[clap(long)]
     job_key: u64,
@@ -25,12 +31,25 @@ impl TryFrom<&UpdateRetriesArgs> for UpdateJobRetriesRequest {
     }
 }
 
-pub(crate) async fn handle_set_retries_command(
-    client: &mut ZeebeClient,
-    args: &UpdateRetriesArgs,
-) -> Result<Box<dyn Debug>> {
-    let request: UpdateJobRetriesRequest = args.try_into()?;
-    Ok(Box::new(
-        client.update_job_retries(request).await?.into_inner(),
-    ))
+#[async_trait]
+impl ExecuteZeebeCommand for UpdateRetriesArgs {
+    type Output = UpdateJobRetriesResponse;
+
+    #[tracing::instrument(skip(client))]
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+    {
+        Ok(client
+            .update_job_retries(UpdateJobRetriesRequest::try_from(&self)?)
+            .await?
+            .into_inner())
+    }
 }

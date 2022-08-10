@@ -1,20 +1,25 @@
-use crate::Debug;
+use crate::{Debug, ExecuteZeebeCommand};
+use async_trait::async_trait;
 use clap::{Args, Subcommand};
 use color_eyre::Result;
-use zeebe_client::{api::ActivateJobsRequest, ZeebeClient};
+use tonic::{
+    client::GrpcService,
+    codegen::{Body, Bytes, StdError},
+};
+use zeebe_client::api::{gateway_client::GatewayClient, ActivateJobsRequest};
 
-#[derive(Args)]
+#[derive(Debug, Args)]
 pub(crate) struct ActivateArgs {
     #[clap(subcommand)]
     resource_type: ActivateResourceType,
 }
 
-#[derive(Subcommand)]
+#[derive(Debug, Subcommand)]
 enum ActivateResourceType {
     Jobs(ActivateJobsArgs),
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 struct ActivateJobsArgs {
     job_type: String,
     #[clap(long, default_value_t = 1)]
@@ -39,19 +44,39 @@ impl From<&ActivateJobsArgs> for ActivateJobsRequest {
     }
 }
 
-pub(crate) async fn handle_activate_command(
-    client: &mut ZeebeClient,
-    args: &ActivateArgs,
-) -> Result<Box<dyn Debug>> {
-    match &args.resource_type {
-        ActivateResourceType::Jobs(args) => handle_activate_jobs_command(client, args).await,
+#[async_trait]
+impl ExecuteZeebeCommand for ActivateArgs {
+    type Output = Box<dyn Debug>;
+
+    #[tracing::instrument(skip(client))]
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+    {
+        match &self.resource_type {
+            ActivateResourceType::Jobs(args) => handle_activate_jobs_command(client, args).await,
+        }
     }
 }
 
-async fn handle_activate_jobs_command(
-    client: &mut ZeebeClient,
+async fn handle_activate_jobs_command<Service: Send>(
+    client: &mut GatewayClient<Service>,
     args: &ActivateJobsArgs,
-) -> Result<Box<dyn Debug>> {
+) -> Result<Box<dyn Debug>>
+where
+    Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+    Service::Error: Into<StdError>,
+    Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+    <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+    <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+{
     let request: ActivateJobsRequest = args.into();
     let mut stream = client.activate_jobs(request).await?.into_inner();
     let mut result = Vec::with_capacity(args.max_jobs_to_activate.try_into().unwrap());

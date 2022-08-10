@@ -1,9 +1,16 @@
+use async_trait::async_trait;
 use color_eyre::eyre::Result;
-use std::fmt::Debug;
 
 use clap::Args;
+use tonic::{
+    client::GrpcService,
+    codegen::{Body, Bytes, StdError},
+};
+use zeebe_client::api::{
+    gateway_client::GatewayClient, CancelProcessInstanceRequest, CancelProcessInstanceResponse,
+};
 
-use zeebe_client::{api::CancelProcessInstanceRequest, ZeebeClient};
+use crate::ExecuteZeebeCommand;
 
 #[derive(Args)]
 pub struct CancelProcessInstanceArgs {
@@ -18,12 +25,24 @@ impl From<&CancelProcessInstanceArgs> for CancelProcessInstanceRequest {
     }
 }
 
-pub async fn handle_command(
-    client: &mut ZeebeClient,
-    args: &CancelProcessInstanceArgs,
-) -> Result<Box<dyn Debug>> {
-    let request: CancelProcessInstanceRequest = args.into();
-    Ok(Box::new(
-        client.cancel_process_instance(request).await?.into_inner(),
-    ))
+
+#[async_trait]
+impl ExecuteZeebeCommand for CancelProcessInstanceArgs {
+    type Output = CancelProcessInstanceResponse;
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+    {
+        Ok(client
+            .cancel_process_instance(CancelProcessInstanceRequest::from(&self))
+            .await?
+            .into_inner())
+    }
 }

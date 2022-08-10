@@ -1,11 +1,9 @@
-use crate::Debug;
+use crate::{Debug, ExecuteZeebeCommand};
+use async_trait::async_trait;
 use clap::{Args, Subcommand};
 use color_eyre::eyre::Result;
-
-use zeebe_client::{
-    api::{CreateProcessInstanceRequest, CreateProcessInstanceWithResultRequest},
-    ZeebeClient,
-};
+use tonic::{codegen::{StdError, Body, Bytes}, client::GrpcService};
+use zeebe_client::api::{CreateProcessInstanceRequest, gateway_client::GatewayClient, CreateProcessInstanceWithResultRequest};
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct CreateArgs {
@@ -30,15 +28,6 @@ struct CreateInstanceArgs {
     version: i32,
 }
 
-pub(crate) async fn handle_create_command(
-    client: &mut ZeebeClient,
-    args: &CreateArgs,
-) -> Result<Box<dyn Debug>> {
-    match &args.resource_type {
-        CreateResourceType::Instance(args) => handle_create_instance_command(client, args).await,
-    }
-}
-
 impl From<&CreateInstanceArgs> for CreateProcessInstanceRequest {
     fn from(args: &CreateInstanceArgs) -> Self {
         CreateProcessInstanceRequest {
@@ -51,10 +40,41 @@ impl From<&CreateInstanceArgs> for CreateProcessInstanceRequest {
     }
 }
 
-async fn handle_create_instance_command(
-    client: &mut ZeebeClient,
+#[async_trait]
+impl ExecuteZeebeCommand for CreateArgs {
+    type Output = Box<dyn Debug>;
+
+    #[tracing::instrument(skip(client))]
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+    {
+        match &self.resource_type {
+            CreateResourceType::Instance(args) => {
+                handle_create_instance_command(client, args).await
+            }
+        }
+    }
+}
+
+async fn handle_create_instance_command<Service: Send>(
+    client: &mut GatewayClient<Service>,
     args: &CreateInstanceArgs,
-) -> Result<Box<dyn Debug>> {
+) -> Result<Box<dyn Debug>>
+where
+    Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+    Service::Error: Into<StdError>,
+    Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+    <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+    <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+{
     let request: CreateProcessInstanceRequest = args.into();
     match args.with_results {
         true => Ok(Box::new(

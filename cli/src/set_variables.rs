@@ -1,7 +1,14 @@
 use std::path::PathBuf;
 
+use crate::ExecuteZeebeCommand;
+use async_trait::async_trait;
 use clap::Args;
-use zeebe_client::api::SetVariablesRequest;
+use color_eyre::Result;
+use tonic::{
+    client::GrpcService,
+    codegen::{Body, Bytes, StdError},
+};
+use zeebe_client::api::{gateway_client::GatewayClient, SetVariablesRequest, SetVariablesResponse};
 
 #[derive(Args)]
 
@@ -31,5 +38,27 @@ impl TryFrom<SetVariablesArgs> for SetVariablesRequest {
             variables,
             local: args.local,
         })
+    }
+}
+
+#[async_trait]
+impl ExecuteZeebeCommand for SetVariablesArgs {
+    type Output = SetVariablesResponse;
+
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+    {
+        Ok(client
+            .set_variables(SetVariablesRequest::try_from(self)?)
+            .await?
+            .into_inner())
     }
 }

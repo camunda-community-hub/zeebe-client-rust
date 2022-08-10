@@ -1,9 +1,17 @@
+use async_trait::async_trait;
 use color_eyre::eyre::Result;
-use std::fmt::Debug;
+
 
 use clap::Args;
+use tonic::{
+    client::GrpcService,
+    codegen::{Body, Bytes, StdError},
+};
+use zeebe_client::api::{
+    gateway_client::GatewayClient, ThrowErrorRequest, ThrowErrorResponse,
+};
 
-use zeebe_client::{api::ThrowErrorRequest, ZeebeClient};
+use crate::ExecuteZeebeCommand;
 
 #[derive(Args)]
 pub struct ThrowErrorArgs {
@@ -28,10 +36,24 @@ impl From<&ThrowErrorArgs> for ThrowErrorRequest {
     }
 }
 
-pub async fn handle_command(
-    client: &mut ZeebeClient,
-    args: &ThrowErrorArgs,
-) -> Result<Box<dyn Debug>> {
-    let request: ThrowErrorRequest = args.into();
-    Ok(Box::new(client.throw_error(request).await?.into_inner()))
+#[async_trait]
+impl ExecuteZeebeCommand for ThrowErrorArgs {
+    type Output = ThrowErrorResponse;
+
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+    {
+        Ok(client
+            .throw_error(ThrowErrorRequest::from(&self))
+            .await?
+            .into_inner())
+    }
 }

@@ -1,22 +1,27 @@
 mod activate;
 mod cancel_process_instance;
 mod create;
+mod deploy;
 mod fail_job;
 mod publish;
 mod retries;
 mod set_variables;
+mod status;
 mod throw_error;
 
-use std::{fmt::Debug, path::PathBuf};
+use std::fmt::Debug;
 
+use async_trait::async_trait;
 use clap::{AppSettings, Args, Parser, Subcommand};
 use color_eyre::eyre::Result;
 
-use set_variables::SetVariablesArgs;
+use tonic::{
+    client::GrpcService,
+    codegen::{Body, Bytes, StdError},
+};
 use zeebe_client::{
     api::{
-        DeployResourceRequest, ResolveIncidentRequest, Resource, SetVariablesRequest,
-        TopologyRequest,
+        gateway_client::GatewayClient, ResolveIncidentRequest, ResolveIncidentResponse,
     },
     Protocol,
 };
@@ -61,28 +66,46 @@ struct Connection {
 
 #[derive(Subcommand)]
 enum Commands {
-    Status,
-    Deploy(DeployArgs),
+    Status(status::StatusArgs),
+    Deploy(deploy::DeployArgs),
     ResolveIncident(IncidentArgs),
     CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
     FailJob(fail_job::FailJobArgs),
     Create(create::CreateArgs),
     Publish(publish::PublishArgs),
     UpdateRetries(retries::UpdateRetriesArgs),
-    SetVariables(SetVariablesArgs),
+    SetVariables(set_variables::SetVariablesArgs),
     Activate(activate::ActivateArgs),
     ThrowError(throw_error::ThrowErrorArgs),
 }
 
 #[derive(Args)]
-struct DeployArgs {
-    #[clap(required = true, value_parser, value_name = "FILE")]
-    resources: Vec<PathBuf>,
-}
-
-#[derive(Args)]
 struct IncidentArgs {
     incident_key: i64,
+}
+
+#[async_trait]
+impl ExecuteZeebeCommand for IncidentArgs {
+    type Output = ResolveIncidentResponse;
+
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
+    {
+        Ok(client
+            .resolve_incident(ResolveIncidentRequest {
+                incident_key: self.incident_key,
+            })
+            .await?
+            .into_inner())
+    }
 }
 
 impl From<Connection> for zeebe_client::Connection {
@@ -99,69 +122,42 @@ impl From<Connection> for zeebe_client::Connection {
     }
 }
 
+#[async_trait]
+trait ExecuteZeebeCommand {
+    type Output: Debug;
+    async fn execute<Service: Send>(
+        self,
+        client: &mut GatewayClient<Service>,
+    ) -> Result<Self::Output>
+    where
+        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
+        Service::Error: Into<StdError>,
+        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
+        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send;
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt::init();
     color_eyre::install()?;
     let cli: Cli = Cli::parse();
     let mut client = zeebe_client::connect(cli.connection.into()).await?;
     let response: Box<dyn Debug> = match cli.command {
-        Commands::Status => Box::new(client.topology(TopologyRequest {}).await?.into_inner()),
-        Commands::Deploy(args) => Box::new(
-            client
-                .deploy_resource(DeployResourceRequest::try_from(&args)?)
-                .await?
-                .into_inner(),
-        ),
-        Commands::ResolveIncident(args) => Box::new(
-            client
-                .resolve_incident(ResolveIncidentRequest {
-                    incident_key: args.incident_key,
-                })
-                .await?
-                .into_inner(),
-        ),
-        Commands::CancelProcessInstance(args) => {
-            cancel_process_instance::handle_command(&mut client, &args).await?
-        }
-        Commands::FailJob(args) => fail_job::handle_command(&mut client, &args).await?,
-        Commands::Create(args) => create::handle_create_command(&mut client, &args).await?,
-        Commands::Publish(args) => publish::handle_publish_command(&mut client, &args).await?,
-        Commands::UpdateRetries(args) => {
-            retries::handle_set_retries_command(&mut client, &args).await?
-        }
-
-        Commands::SetVariables(arg) => Box::new(
-            client
-                .set_variables(SetVariablesRequest::try_from(arg)?)
-                .await?
-                .into_inner(),
-        ),
-        Commands::Activate(args) => activate::handle_activate_command(&mut client, &args).await?,
-        Commands::ThrowError(args) => throw_error::handle_command(&mut client, &args).await?,
+        Commands::Status(args) => Box::new(args.execute(&mut client).await?),
+        Commands::Deploy(args) => Box::new(args.execute(&mut client).await?),
+        Commands::ResolveIncident(args) => Box::new(args.execute(&mut client).await?),
+        Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
+        Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
+        Commands::Create(args) => args.execute(&mut client).await?, // Already boxed
+        Commands::Publish(args) => args.execute(&mut client).await?, // Already boxed,
+        Commands::UpdateRetries(args) => Box::new(args.execute(&mut client).await?),
+        Commands::SetVariables(args) => Box::new(args.execute(&mut client).await?),
+        Commands::Activate(args) => args.execute(&mut client).await?, // Already boxed
+        Commands::ThrowError(args) => Box::new(args.execute(&mut client).await?),
     };
 
     println!("{:#?}", response);
 
     Ok(())
-}
-
-impl TryFrom<&DeployArgs> for DeployResourceRequest {
-    type Error = color_eyre::Report;
-
-    fn try_from(args: &DeployArgs) -> Result<DeployResourceRequest, Self::Error> {
-        let mut resources = Vec::with_capacity(args.resources.len());
-        for path in &args.resources {
-            let resource = Resource {
-                name: path
-                    .file_name()
-                    .expect("resource path should point to a file")
-                    .to_str()
-                    .expect("file name should be UTF-8")
-                    .to_string(),
-                content: std::fs::read(path)?,
-            };
-            resources.push(resource);
-        }
-        Ok(Self { resources })
-    }
 }
