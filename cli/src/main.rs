@@ -1,3 +1,4 @@
+mod activate;
 mod create;
 mod publish;
 mod retries;
@@ -66,6 +67,7 @@ enum Commands {
     Publish(publish::PublishArgs),
     UpdateRetries(retries::UpdateRetriesArgs),
     SetVariables(SetVariablesArgs),
+    Activate(activate::ActivateArgs),
 }
 
 #[derive(Args)]
@@ -168,6 +170,7 @@ async fn main() -> Result<()> {
                 .await?
                 .into_inner(),
         ),
+        Commands::Activate(args) => activate::handle_activate_command(&mut client, &args).await?,
     };
 
     println!("{:#?}", response);
