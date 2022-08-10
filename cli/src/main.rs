@@ -3,7 +3,7 @@ use std::{fmt::Debug, path::PathBuf};
 use clap::{AppSettings, Args, Parser, Subcommand};
 use color_eyre::eyre::Result;
 
-use zeebe_client::api::{DeployResourceRequest, Resource, TopologyRequest};
+use zeebe_client::{api::{DeployResourceRequest, ResolveIncidentRequest, Resource, TopologyRequest}, Protocol};
 
 #[derive(Parser)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
@@ -47,6 +47,7 @@ struct Connection {
 enum Commands {
     Status,
     Deploy(DeployArgs),
+    ResolveIncident(IncidentArgs),
 }
 
 #[derive(Args)]
@@ -55,11 +56,17 @@ struct DeployArgs {
     resources: Vec<PathBuf>,
 }
 
+#[derive(Args)]
+struct IncidentArgs {
+    incident_key: i64,
+}
+
 impl From<Connection> for zeebe_client::Connection {
     fn from(conn: Connection) -> Self {
-        match conn.address {
-            Some(addr) => zeebe_client::Connection::Address(addr),
-            None => zeebe_client::Connection::HostPort(conn.host, conn.port),
+        match (conn.address, conn.insecure) {
+            (Some(addr),_) => zeebe_client::Connection::Address(addr),
+            (None, true) => zeebe_client::Connection::HostPort(Protocol::HTTP, conn.host, conn.port),
+            (None, false) => zeebe_client::Connection::HostPort(Protocol::HTTPS, conn.host, conn.port),
         }
     }
 }
@@ -74,6 +81,14 @@ async fn main() -> Result<()> {
         Commands::Deploy(args) => Box::new(
             client
                 .deploy_resource(build_deploy_request(args)?)
+                .await?
+                .into_inner(),
+        ),
+        Commands::ResolveIncident(args) => Box::new(
+            client
+                .resolve_incident(ResolveIncidentRequest {
+                    incident_key: args.incident_key,
+                })
                 .await?
                 .into_inner(),
         ),
