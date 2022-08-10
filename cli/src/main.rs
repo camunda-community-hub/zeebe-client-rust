@@ -96,11 +96,11 @@ struct FailJobArgs {
     // an optional message describing why the job failed
     // this is particularly useful if a job runs out of retries and an incident is raised,
     // as it this message can help explain why an incident was raised
-    #[clap(short, long)]
-    error_message: Option<String>,
+    #[clap(required = false, short, long, default_value = "")]
+    error_message: String,
     // the back off timeout for the next retry
-    #[clap(short = 'b', long)]
-    retry_back_off: Option<i64>,
+    #[clap(required = false, short = 'b', long, default_value = "0")]
+    retry_back_off: i64,
 }
 
 impl From<Connection> for zeebe_client::Connection {
@@ -151,8 +151,8 @@ async fn main() -> Result<()> {
                 .fail_job(FailJobRequest {
                     job_key: args.job_key,
                     retries: args.retries,
-                    error_message: args.error_message.unwrap_or_default(),
-                    retry_back_off: args.retry_back_off.unwrap_or(0),
+                    error_message: args.error_message,
+                    retry_back_off: args.retry_back_off,
                 })
                 .await?
                 .into_inner(),
