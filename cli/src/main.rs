@@ -1,19 +1,22 @@
 mod create;
 mod publish;
 mod retries;
+mod set_variables;
 
 use std::{fmt::Debug, path::PathBuf};
 
 use clap::{AppSettings, Args, Parser, Subcommand};
 use color_eyre::eyre::Result;
 
+use set_variables::SetVariablesArgs;
 use zeebe_client::{
     api::{
         CancelProcessInstanceRequest, DeployResourceRequest, FailJobRequest,
-        ResolveIncidentRequest, Resource, TopologyRequest,
+        ResolveIncidentRequest, Resource, TopologyRequest, SetVariablesRequest,
     },
     Protocol,
 };
+
 
 #[derive(Parser)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
@@ -63,6 +66,7 @@ enum Commands {
     Create(create::CreateArgs),
     Publish(publish::PublishArgs),
     UpdateRetries(retries::UpdateRetriesArgs),
+    SetVariables(SetVariablesArgs),
 }
 
 #[derive(Args)]
@@ -122,7 +126,7 @@ async fn main() -> Result<()> {
         Commands::Status => Box::new(client.topology(TopologyRequest {}).await?.into_inner()),
         Commands::Deploy(args) => Box::new(
             client
-                .deploy_resource(build_deploy_request(args)?)
+                .deploy_resource(TryInto::<DeployResourceRequest>::try_into(args)?)
                 .await?
                 .into_inner(),
         ),
@@ -147,7 +151,7 @@ async fn main() -> Result<()> {
                 .fail_job(FailJobRequest {
                     job_key: args.job_key,
                     retries: args.retries,
-                    error_message: args.error_message.unwrap_or(String::new()),
+                    error_message: args.error_message.unwrap_or_default(),
                     retry_back_off: args.retry_back_off.unwrap_or(0),
                 })
                 .await?
@@ -158,6 +162,13 @@ async fn main() -> Result<()> {
         Commands::UpdateRetries(args) => {
             retries::handle_set_retries_command(&mut client, &args).await?
         }
+
+        Commands::SetVariables(arg) => Box::new(
+            client
+                .set_variables(TryInto::<SetVariablesRequest>::try_into(arg)?)
+                .await?
+                .into_inner(),
+        ),
     };
 
     println!("{:#?}", response);
@@ -165,19 +176,23 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn build_deploy_request(args: DeployArgs) -> Result<DeployResourceRequest> {
-    let mut resources = Vec::with_capacity(args.resources.len());
-    for path in &args.resources {
-        let resource = Resource {
-            name: path
-                .file_name()
-                .expect("resource path should point to a file")
-                .to_str()
-                .expect("file name should be UTF-8")
-                .to_string(),
-            content: std::fs::read(path)?,
-        };
-        resources.push(resource);
+impl TryInto<DeployResourceRequest> for DeployArgs {
+    type Error = color_eyre::Report;
+
+    fn try_into(self) -> Result<DeployResourceRequest, Self::Error> {
+        let mut resources = Vec::with_capacity(self.resources.len());
+        for path in &self.resources {
+            let resource = Resource {
+                name: path
+                    .file_name()
+                    .expect("resource path should point to a file")
+                    .to_str()
+                    .expect("file name should be UTF-8")
+                    .to_string(),
+                content: std::fs::read(path)?,
+            };
+            resources.push(resource);
+        }
+        Ok(DeployResourceRequest { resources })
     }
-    Ok(DeployResourceRequest { resources })
 }
