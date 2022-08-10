@@ -1,9 +1,15 @@
+mod create;
+
 use std::{fmt::Debug, path::PathBuf};
 
 use clap::{AppSettings, Args, Parser, Subcommand};
 use color_eyre::eyre::Result;
 
-use zeebe_client::{api::{DeployResourceRequest, ResolveIncidentRequest, Resource, TopologyRequest}, Protocol};
+use create::CreateArgs;
+use zeebe_client::{
+    api::{DeployResourceRequest, ResolveIncidentRequest, Resource, TopologyRequest},
+    Protocol,
+};
 
 #[derive(Parser)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
@@ -48,6 +54,7 @@ enum Commands {
     Status,
     Deploy(DeployArgs),
     ResolveIncident(IncidentArgs),
+    Create(CreateArgs),
 }
 
 #[derive(Args)]
@@ -64,9 +71,13 @@ struct IncidentArgs {
 impl From<Connection> for zeebe_client::Connection {
     fn from(conn: Connection) -> Self {
         match (conn.address, conn.insecure) {
-            (Some(addr),_) => zeebe_client::Connection::Address(addr),
-            (None, true) => zeebe_client::Connection::HostPort(Protocol::HTTP, conn.host, conn.port),
-            (None, false) => zeebe_client::Connection::HostPort(Protocol::HTTPS, conn.host, conn.port),
+            (Some(addr), _) => zeebe_client::Connection::Address(addr),
+            (None, true) => {
+                zeebe_client::Connection::HostPort(Protocol::HTTP, conn.host, conn.port)
+            }
+            (None, false) => {
+                zeebe_client::Connection::HostPort(Protocol::HTTPS, conn.host, conn.port)
+            }
         }
     }
 }
@@ -92,6 +103,7 @@ async fn main() -> Result<()> {
                 .await?
                 .into_inner(),
         ),
+        Commands::Create(args) => create::handle_create_command(&mut client, &args).await?,
     };
 
     println!("{:#?}", response);
