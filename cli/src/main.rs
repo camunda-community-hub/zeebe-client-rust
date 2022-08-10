@@ -1,5 +1,6 @@
 mod create;
 mod publish;
+mod retries;
 
 use std::{fmt::Debug, path::PathBuf};
 
@@ -61,6 +62,7 @@ enum Commands {
     FailJob(FailJobArgs),
     Create(create::CreateArgs),
     Publish(publish::PublishArgs),
+    UpdateRetries(retries::UpdateRetriesArgs),
 }
 
 #[derive(Args)]
@@ -153,6 +155,9 @@ async fn main() -> Result<()> {
         ),
         Commands::Create(args) => create::handle_create_command(&mut client, &args).await?,
         Commands::Publish(args) => publish::handle_publish_command(&mut client, &args).await?,
+        Commands::UpdateRetries(args) => {
+            retries::handle_set_retries_command(&mut client, &args).await?
+        }
     };
 
     println!("{:#?}", response);
