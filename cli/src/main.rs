@@ -1,3 +1,5 @@
+mod create;
+
 use std::{fmt::Debug, path::PathBuf};
 
 use clap::{AppSettings, Args, Parser, Subcommand};
@@ -56,6 +58,7 @@ enum Commands {
     ResolveIncident(IncidentArgs),
     CancelProcessInstance(CancelProcessInstanceArgs),
     FailJob(FailJobArgs),
+    Create(create::CreateArgs),
 }
 
 #[derive(Args)]
@@ -146,6 +149,7 @@ async fn main() -> Result<()> {
                 .await?
                 .into_inner(),
         ),
+        Commands::Create(args) => create::handle_create_command(&mut client, &args).await?,
     };
 
     println!("{:#?}", response);
