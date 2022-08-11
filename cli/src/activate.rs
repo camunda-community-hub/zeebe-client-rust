@@ -2,11 +2,7 @@ use crate::{Debug, ExecuteZeebeCommand};
 use async_trait::async_trait;
 use clap::{Args, Subcommand};
 use color_eyre::Result;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
-};
-use zeebe_client::{api::{gateway_client::GatewayClient, ActivateJobsRequest}, ZeebeClient};
+use zeebe_client::{api::ActivateJobsRequest, ZeebeClient};
 
 #[derive(Debug, Args)]
 pub(crate) struct ActivateArgs {

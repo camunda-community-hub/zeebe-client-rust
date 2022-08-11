@@ -3,13 +3,10 @@ use crate::{Debug, ExecuteZeebeCommand};
 use async_trait::async_trait;
 use clap::Args;
 use color_eyre::Result;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
+use zeebe_client::{
+    api::{UpdateJobRetriesRequest, UpdateJobRetriesResponse},
+    ZeebeClient,
 };
-use zeebe_client::{api::{
-    gateway_client::GatewayClient, UpdateJobRetriesRequest, UpdateJobRetriesResponse,
-}, ZeebeClient};
 
 #[derive(Debug, Args)]
 pub(crate) struct UpdateRetriesArgs {
@@ -36,11 +33,7 @@ impl ExecuteZeebeCommand for UpdateRetriesArgs {
     type Output = UpdateJobRetriesResponse;
 
     #[tracing::instrument(skip(client))]
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .update_job_retries(UpdateJobRetriesRequest::try_from(&self)?)
             .await?

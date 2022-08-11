@@ -15,14 +15,8 @@ use async_trait::async_trait;
 use clap::{AppSettings, Args, Parser, Subcommand};
 use color_eyre::eyre::Result;
 
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
-};
 use zeebe_client::{
-    api::{
-        gateway_client::GatewayClient, ResolveIncidentRequest, ResolveIncidentResponse,
-    },
+    api::{ResolveIncidentRequest, ResolveIncidentResponse},
     Protocol, ZeebeClient,
 };
 
@@ -88,11 +82,7 @@ struct IncidentArgs {
 impl ExecuteZeebeCommand for IncidentArgs {
     type Output = ResolveIncidentResponse;
 
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .resolve_incident(ResolveIncidentRequest {
                 incident_key: self.incident_key,
@@ -119,10 +109,7 @@ impl From<Connection> for zeebe_client::Connection {
 #[async_trait]
 trait ExecuteZeebeCommand {
     type Output: Debug;
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>;
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output>;
 }
 
 #[tokio::main]

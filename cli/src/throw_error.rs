@@ -1,15 +1,11 @@
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
 
-
 use clap::Args;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
+use zeebe_client::{
+    api::{ThrowErrorRequest, ThrowErrorResponse},
+    ZeebeClient,
 };
-use zeebe_client::{api::{
-    gateway_client::GatewayClient, ThrowErrorRequest, ThrowErrorResponse,
-}, ZeebeClient};
 
 use crate::ExecuteZeebeCommand;
 
@@ -40,11 +36,7 @@ impl From<&ThrowErrorArgs> for ThrowErrorRequest {
 impl ExecuteZeebeCommand for ThrowErrorArgs {
     type Output = ThrowErrorResponse;
 
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .throw_error(ThrowErrorRequest::from(&self))
             .await?

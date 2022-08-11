@@ -2,11 +2,11 @@ use crate::ExecuteZeebeCommand;
 use async_trait::async_trait;
 use clap::Args;
 use color_eyre::Result;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
+
+use zeebe_client::{
+    api::{TopologyRequest, TopologyResponse},
+    ZeebeClient,
 };
-use zeebe_client::{api::{gateway_client::GatewayClient, TopologyRequest, TopologyResponse}, ZeebeClient};
 
 #[derive(Args)]
 pub struct StatusArgs {}
@@ -15,11 +15,7 @@ pub struct StatusArgs {}
 impl ExecuteZeebeCommand for StatusArgs {
     type Output = TopologyResponse;
 
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client.topology(TopologyRequest {}).await?.into_inner())
     }
 }

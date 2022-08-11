@@ -2,13 +2,10 @@ use async_trait::async_trait;
 use color_eyre::eyre::Result;
 
 use clap::Args;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
+use zeebe_client::{
+    api::{CancelProcessInstanceRequest, CancelProcessInstanceResponse},
+    ZeebeClient,
 };
-use zeebe_client::{api::{
-    gateway_client::GatewayClient, CancelProcessInstanceRequest, CancelProcessInstanceResponse,
-}, ZeebeClient};
 
 use crate::ExecuteZeebeCommand;
 
@@ -25,15 +22,10 @@ impl From<&CancelProcessInstanceArgs> for CancelProcessInstanceRequest {
     }
 }
 
-
 #[async_trait]
 impl ExecuteZeebeCommand for CancelProcessInstanceArgs {
     type Output = CancelProcessInstanceResponse;
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .cancel_process_instance(CancelProcessInstanceRequest::from(&self))
             .await?

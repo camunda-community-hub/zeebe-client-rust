@@ -4,11 +4,10 @@ use crate::ExecuteZeebeCommand;
 use async_trait::async_trait;
 use clap::Args;
 use color_eyre::Result;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
+use zeebe_client::{
+    api::{SetVariablesRequest, SetVariablesResponse},
+    ZeebeClient,
 };
-use zeebe_client::{api::{gateway_client::GatewayClient, SetVariablesRequest, SetVariablesResponse}, ZeebeClient};
 
 #[derive(Args)]
 
@@ -45,11 +44,7 @@ impl TryFrom<SetVariablesArgs> for SetVariablesRequest {
 impl ExecuteZeebeCommand for SetVariablesArgs {
     type Output = SetVariablesResponse;
 
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .set_variables(SetVariablesRequest::try_from(self)?)
             .await?

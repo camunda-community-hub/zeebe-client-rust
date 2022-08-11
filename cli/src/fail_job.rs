@@ -1,16 +1,12 @@
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
 
-
 use crate::ExecuteZeebeCommand;
 use clap::Args;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
+use zeebe_client::{
+    api::{FailJobRequest, FailJobResponse},
+    ZeebeClient,
 };
-use zeebe_client::{api::{
-    gateway_client::GatewayClient, FailJobRequest, FailJobResponse,
-}, ZeebeClient};
 #[derive(Args)]
 pub struct FailJobArgs {
     // the unique job identifier, as obtained when activating the job
@@ -44,11 +40,7 @@ impl From<&FailJobArgs> for FailJobRequest {
 impl ExecuteZeebeCommand for FailJobArgs {
     type Output = FailJobResponse;
 
-    async fn execute(
-        self,
-        client: &mut ZeebeClient,
-    ) -> Result<Self::Output>
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .fail_job(FailJobRequest::from(&self))
             .await?
