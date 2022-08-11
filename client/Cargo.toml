@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tonic = "0.8"
+tonic = { version = "0.8", features = ["tls", "tls-roots", "gzip"] }
 prost = "0.11"
 thiserror = "1.0"
+tracing = { version="0.1", features = ["async-await"] }
 
 [build-dependencies]
-tonic-build = "0.8"
+tonic-build = { version = "0.8" }
 prost-build = "0.11"

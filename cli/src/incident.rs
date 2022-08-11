@@ -2,7 +2,10 @@ use async_trait::async_trait;
 use clap::Args;
 use color_eyre::Result;
 
-use zeebe_client::{api::{ResolveIncidentResponse, ResolveIncidentRequest}, ZeebeClient};
+use zeebe_client::{
+    api::{ResolveIncidentRequest, ResolveIncidentResponse},
+    ZeebeClient,
+};
 
 use crate::ExecuteZeebeCommand;
 

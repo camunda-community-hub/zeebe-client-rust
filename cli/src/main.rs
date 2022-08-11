@@ -3,36 +3,51 @@ mod cancel_process_instance;
 mod create;
 mod deploy;
 mod fail_job;
+mod incident;
 mod publish;
 mod retries;
 mod set_variables;
 mod status;
 mod throw_error;
-mod incident;
 
 use std::fmt::Debug;
 
 use async_trait::async_trait;
 use clap::{AppSettings, Parser, Subcommand};
+use color_eyre::eyre::Report;
 use color_eyre::eyre::Result;
-
-use zeebe_client::{
-    Protocol, ZeebeClient,
-};
+use zeebe_client::ZeebeClient;
 
 #[derive(Parser)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 struct Cli {
     #[clap(flatten)]
     connection: Connection,
+    #[clap(flatten)]
+    auth: Authentication,
     #[clap(subcommand)]
     command: Commands,
 }
 
 #[derive(Parser)]
+struct Authentication {
+    #[clap(long, value_parser, group = "authentication", env = "ZEEBE_CLIENT_ID")]
+    client_id: Option<String>,
+    #[clap(long, value_parser, env = "ZEEBE_CLIENT_SECRET")]
+    client_secret: Option<String>,
+    #[clap(
+        long,
+        value_parser,
+        env = "ZEEBE_AUTHORIZATION_SERVER_URL",
+        default_value = "https://login.cloud.camunda.io/oauth/token/"
+    )]
+    authorization_server: String,
+}
+
+#[derive(Parser)]
 #[clap(group = clap::ArgGroup::new("connection"))]
 struct Connection {
-    #[clap(long)]
+    #[clap(long, default_value_t = false)]
     insecure: bool,
 
     #[clap(long, value_parser, group = "connection", env = "ZEEBE_ADDRESS")]
@@ -75,14 +90,37 @@ enum Commands {
 
 impl From<Connection> for zeebe_client::Connection {
     fn from(conn: Connection) -> Self {
-        match (conn.address, conn.insecure) {
-            (Some(addr), _) => zeebe_client::Connection::Address(addr),
-            (None, true) => {
-                zeebe_client::Connection::HostPort(Protocol::HTTP, conn.host, conn.port)
-            }
-            (None, false) => {
-                zeebe_client::Connection::HostPort(Protocol::HTTPS, conn.host, conn.port)
-            }
+        match conn.address {
+            Some(addr) => zeebe_client::Connection::Address {
+                insecure: conn.insecure,
+                addr,
+            },
+            None => zeebe_client::Connection::HostPort {
+                insecure: conn.insecure,
+                host: conn.host,
+                port: conn.port,
+            },
+        }
+    }
+}
+
+impl TryFrom<Authentication> for zeebe_client::Authentication {
+    type Error = Report;
+
+    fn try_from(auth: Authentication) -> Result<zeebe_client::Authentication> {
+        match (auth.client_id, auth.client_secret) {
+            (None, None) => Ok(zeebe_client::Authentication::Unauthenticated),
+            (Some(client_id), Some(client_secret)) => Ok(zeebe_client::Authentication::Oauth2(
+                zeebe_client::auth::OAuth2Config {
+                    client_id,
+                    client_secret,
+                    auth_server: auth.authorization_server,
+                    audience: "zeebe".to_owned(),
+                },
+            )),
+            _ => Err(color_eyre::eyre::eyre!(
+                "Partial authentication info, needs at least client id and client secret"
+            )),
         }
     }
 }
@@ -93,12 +131,32 @@ trait ExecuteZeebeCommand {
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output>;
 }
 
+fn install_tracing() {
+    use tracing_error::ErrorLayer;
+    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::EnvFilter;
+    use tracing_tree::HierarchicalLayer;
+
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(HierarchicalLayer::new(2))
+        .with(ErrorLayer::default())
+        .init();
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    install_tracing();
+
     color_eyre::install()?;
+
     let cli: Cli = Cli::parse();
-    let mut client: ZeebeClient = zeebe_client::connect(cli.connection.into()).await?;
+    let mut client: ZeebeClient =
+        zeebe_client::connect(cli.connection.into(), cli.auth.try_into()?).await?;
     let response: Box<dyn Debug> = match cli.command {
         Commands::Status(args) => Box::new(args.execute(&mut client).await?),
         Commands::Deploy(args) => Box::new(args.execute(&mut client).await?),
