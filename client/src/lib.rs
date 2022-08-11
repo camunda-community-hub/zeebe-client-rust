@@ -1,4 +1,5 @@
 #![feature(associated_type_bounds)]
+#![feature(type_alias_impl_trait)]
 
 mod auth;
 
@@ -11,7 +12,6 @@ use tonic::client::GrpcService;
 use tonic::codegen::Body;
 use tonic::codegen::Bytes;
 use tonic::{
-
     codegen::{http::uri::InvalidUri, StdError},
     service::Interceptor,
     transport::{self, Channel, Uri},
@@ -53,18 +53,15 @@ impl Interceptor for FakeInterceptor {
 // Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
 // <Service as GrpcService<tonic::body::BoxBody>>::Future: Send;
 
-pub async fn connect(
-    conn: Connection,
-) -> Result<
-    GatewayClient<
-        impl GrpcService<
-                tonic::body::BoxBody,
-                ResponseBody: Body<Data = Bytes, Error: Into<StdError> + Send> + Send + 'static,
-                Future: Send,
-            > + Send,
-    >,
-    ConnectionError,
-> {
+pub type ZeebeClient = GatewayClient<
+    impl GrpcService<
+            tonic::body::BoxBody,
+            ResponseBody: Body<Data = Bytes, Error: Into<StdError> + Send> + Send + 'static,
+            Future: Send,
+        > + Send,
+>;
+
+pub async fn connect(conn: Connection) -> Result<ZeebeClient, ConnectionError> {
     let uri = match conn {
         Connection::Address(addr) => Uri::from_str(&addr),
         Connection::HostPort(proto, host, port) => {
@@ -75,6 +72,5 @@ pub async fn connect(
     Ok(api::gateway_client::GatewayClient::with_interceptor(
         channel.connect().await?,
         AuthInterceptor {},
-
     ))
 }

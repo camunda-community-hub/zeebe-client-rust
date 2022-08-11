@@ -3,12 +3,9 @@ use crate::{Debug, ExecuteZeebeCommand};
 use async_trait::async_trait;
 use clap::Args;
 use color_eyre::Result;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
-};
-use zeebe_client::api::{
-    gateway_client::GatewayClient, UpdateJobRetriesRequest, UpdateJobRetriesResponse,
+use zeebe_client::{
+    api::{UpdateJobRetriesRequest, UpdateJobRetriesResponse},
+    ZeebeClient,
 };
 
 #[derive(Debug, Args)]
@@ -36,17 +33,7 @@ impl ExecuteZeebeCommand for UpdateRetriesArgs {
     type Output = UpdateJobRetriesResponse;
 
     #[tracing::instrument(skip(client))]
-    async fn execute<Service: Send>(
-        self,
-        client: &mut GatewayClient<Service>,
-    ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .update_job_retries(UpdateJobRetriesRequest::try_from(&self)?)
             .await?
