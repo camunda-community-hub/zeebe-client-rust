@@ -2,8 +2,10 @@ use crate::{Debug, ExecuteZeebeCommand};
 use async_trait::async_trait;
 use clap::{Args, Subcommand};
 use color_eyre::eyre::Result;
-use tonic::{codegen::{StdError, Body, Bytes}, client::GrpcService};
-use zeebe_client::api::{CreateProcessInstanceRequest, gateway_client::GatewayClient, CreateProcessInstanceWithResultRequest};
+use zeebe_client::{
+    api::{CreateProcessInstanceRequest, CreateProcessInstanceWithResultRequest},
+    ZeebeClient,
+};
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct CreateArgs {
@@ -45,17 +47,7 @@ impl ExecuteZeebeCommand for CreateArgs {
     type Output = Box<dyn Debug>;
 
     #[tracing::instrument(skip(client))]
-    async fn execute<Service: Send>(
-        self,
-        client: &mut GatewayClient<Service>,
-    ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         match &self.resource_type {
             CreateResourceType::Instance(args) => {
                 handle_create_instance_command(client, args).await
@@ -64,17 +56,10 @@ impl ExecuteZeebeCommand for CreateArgs {
     }
 }
 
-async fn handle_create_instance_command<Service: Send>(
-    client: &mut GatewayClient<Service>,
+async fn handle_create_instance_command(
+    client: &mut ZeebeClient,
     args: &CreateInstanceArgs,
-) -> Result<Box<dyn Debug>>
-where
-    Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-    Service::Error: Into<StdError>,
-    Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-    <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-    <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
-{
+) -> Result<Box<dyn Debug>> {
     let request: CreateProcessInstanceRequest = args.into();
     match args.with_results {
         true => Ok(Box::new(

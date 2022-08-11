@@ -2,12 +2,10 @@ use std::path::PathBuf;
 
 use async_trait::async_trait;
 use clap::Args;
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
-};
-use zeebe_client::api::{
-    gateway_client::GatewayClient, DeployResourceRequest, DeployResourceResponse, Resource,
+
+use zeebe_client::{
+    api::{DeployResourceRequest, DeployResourceResponse, Resource},
+    ZeebeClient,
 };
 
 use crate::ExecuteZeebeCommand;
@@ -22,17 +20,7 @@ pub(crate) struct DeployArgs {
 impl ExecuteZeebeCommand for DeployArgs {
     type Output = DeployResourceResponse;
 
-    async fn execute<Service: Send>(
-        self,
-        client: &mut GatewayClient<Service>,
-    ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         Ok(client
             .deploy_resource(DeployResourceRequest::try_from(&self)?)
             .await?

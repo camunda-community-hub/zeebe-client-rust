@@ -4,11 +4,7 @@ use std::fmt::Debug;
 
 use clap::{Args, Subcommand};
 
-use tonic::{
-    client::GrpcService,
-    codegen::{Body, Bytes, StdError},
-};
-use zeebe_client::api::{gateway_client::GatewayClient, PublishMessageRequest};
+use zeebe_client::{api::PublishMessageRequest, ZeebeClient};
 
 use crate::ExecuteZeebeCommand;
 
@@ -53,17 +49,7 @@ impl ExecuteZeebeCommand for PublishArgs {
     type Output = Box<dyn Debug>;
 
     #[tracing::instrument(skip(client))]
-    async fn execute<Service: Send>(
-        self,
-        client: &mut GatewayClient<Service>,
-    ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
-    {
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
         match &self.resource_type {
             PublishResourceType::Message(args) => {
                 handle_publish_message_command(client, args).await
@@ -72,17 +58,10 @@ impl ExecuteZeebeCommand for PublishArgs {
     }
 }
 
-async fn handle_publish_message_command<Service: Send>(
-    client: &mut GatewayClient<Service>,
+async fn handle_publish_message_command(
+    client: &mut ZeebeClient,
     args: &PublishMessageArgs,
-) -> Result<Box<dyn Debug>>
-where
-    Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-    Service::Error: Into<StdError>,
-    Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-    <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-    <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
-{
+) -> Result<Box<dyn Debug>> {
     let request: PublishMessageRequest = args.into();
     Ok(Box::new(
         client.publish_message(request).await?.into_inner(),
