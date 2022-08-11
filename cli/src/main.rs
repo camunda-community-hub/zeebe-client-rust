@@ -8,15 +8,15 @@ mod retries;
 mod set_variables;
 mod status;
 mod throw_error;
+mod incident;
 
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use clap::{AppSettings, Args, Parser, Subcommand};
+use clap::{AppSettings, Parser, Subcommand};
 use color_eyre::eyre::Result;
 
 use zeebe_client::{
-    api::{ResolveIncidentRequest, ResolveIncidentResponse},
     Protocol, ZeebeClient,
 };
 
@@ -62,7 +62,7 @@ struct Connection {
 enum Commands {
     Status(status::StatusArgs),
     Deploy(deploy::DeployArgs),
-    ResolveIncident(IncidentArgs),
+    ResolveIncident(incident::IncidentArgs),
     CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
     FailJob(fail_job::FailJobArgs),
     Create(create::CreateArgs),
@@ -71,25 +71,6 @@ enum Commands {
     SetVariables(set_variables::SetVariablesArgs),
     Activate(activate::ActivateArgs),
     ThrowError(throw_error::ThrowErrorArgs),
-}
-
-#[derive(Args)]
-struct IncidentArgs {
-    incident_key: i64,
-}
-
-#[async_trait]
-impl ExecuteZeebeCommand for IncidentArgs {
-    type Output = ResolveIncidentResponse;
-
-    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
-        Ok(client
-            .resolve_incident(ResolveIncidentRequest {
-                incident_key: self.incident_key,
-            })
-            .await?
-            .into_inner())
-    }
 }
 
 impl From<Connection> for zeebe_client::Connection {
