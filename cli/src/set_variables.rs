@@ -8,7 +8,7 @@ use tonic::{
     client::GrpcService,
     codegen::{Body, Bytes, StdError},
 };
-use zeebe_client::api::{gateway_client::GatewayClient, SetVariablesRequest, SetVariablesResponse};
+use zeebe_client::{api::{gateway_client::GatewayClient, SetVariablesRequest, SetVariablesResponse}, ZeebeClient};
 
 #[derive(Args)]
 
@@ -45,16 +45,10 @@ impl TryFrom<SetVariablesArgs> for SetVariablesRequest {
 impl ExecuteZeebeCommand for SetVariablesArgs {
     type Output = SetVariablesResponse;
 
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
+        client: &mut ZeebeClient,
     ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
     {
         Ok(client
             .set_variables(SetVariablesRequest::try_from(self)?)

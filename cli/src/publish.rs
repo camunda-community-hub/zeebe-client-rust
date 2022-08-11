@@ -8,7 +8,7 @@ use tonic::{
     client::GrpcService,
     codegen::{Body, Bytes, StdError},
 };
-use zeebe_client::api::{gateway_client::GatewayClient, PublishMessageRequest};
+use zeebe_client::{api::{gateway_client::GatewayClient, PublishMessageRequest}, ZeebeClient};
 
 use crate::ExecuteZeebeCommand;
 
@@ -53,16 +53,10 @@ impl ExecuteZeebeCommand for PublishArgs {
     type Output = Box<dyn Debug>;
 
     #[tracing::instrument(skip(client))]
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
+        client: &mut ZeebeClient,
     ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
     {
         match &self.resource_type {
             PublishResourceType::Message(args) => {

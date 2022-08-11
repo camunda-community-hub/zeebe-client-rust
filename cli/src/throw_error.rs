@@ -7,9 +7,9 @@ use tonic::{
     client::GrpcService,
     codegen::{Body, Bytes, StdError},
 };
-use zeebe_client::api::{
+use zeebe_client::{api::{
     gateway_client::GatewayClient, ThrowErrorRequest, ThrowErrorResponse,
-};
+}, ZeebeClient};
 
 use crate::ExecuteZeebeCommand;
 
@@ -40,16 +40,10 @@ impl From<&ThrowErrorArgs> for ThrowErrorRequest {
 impl ExecuteZeebeCommand for ThrowErrorArgs {
     type Output = ThrowErrorResponse;
 
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
+        client: &mut ZeebeClient,
     ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
     {
         Ok(client
             .throw_error(ThrowErrorRequest::from(&self))

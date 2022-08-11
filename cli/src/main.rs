@@ -23,7 +23,7 @@ use zeebe_client::{
     api::{
         gateway_client::GatewayClient, ResolveIncidentRequest, ResolveIncidentResponse,
     },
-    Protocol,
+    Protocol, ZeebeClient,
 };
 
 #[derive(Parser)]
@@ -88,16 +88,10 @@ struct IncidentArgs {
 impl ExecuteZeebeCommand for IncidentArgs {
     type Output = ResolveIncidentResponse;
 
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
+        client: &mut ZeebeClient,
     ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
     {
         Ok(client
             .resolve_incident(ResolveIncidentRequest {
@@ -125,16 +119,10 @@ impl From<Connection> for zeebe_client::Connection {
 #[async_trait]
 trait ExecuteZeebeCommand {
     type Output: Debug;
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
-    ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send;
+        client: &mut ZeebeClient,
+    ) -> Result<Self::Output>;
 }
 
 #[tokio::main]

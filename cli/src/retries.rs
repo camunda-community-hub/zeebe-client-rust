@@ -7,9 +7,9 @@ use tonic::{
     client::GrpcService,
     codegen::{Body, Bytes, StdError},
 };
-use zeebe_client::api::{
+use zeebe_client::{api::{
     gateway_client::GatewayClient, UpdateJobRetriesRequest, UpdateJobRetriesResponse,
-};
+}, ZeebeClient};
 
 #[derive(Debug, Args)]
 pub(crate) struct UpdateRetriesArgs {
@@ -36,16 +36,10 @@ impl ExecuteZeebeCommand for UpdateRetriesArgs {
     type Output = UpdateJobRetriesResponse;
 
     #[tracing::instrument(skip(client))]
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
+        client: &mut ZeebeClient,
     ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
     {
         Ok(client
             .update_job_retries(UpdateJobRetriesRequest::try_from(&self)?)

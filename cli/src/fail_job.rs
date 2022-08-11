@@ -8,9 +8,9 @@ use tonic::{
     client::GrpcService,
     codegen::{Body, Bytes, StdError},
 };
-use zeebe_client::api::{
+use zeebe_client::{api::{
     gateway_client::GatewayClient, FailJobRequest, FailJobResponse,
-};
+}, ZeebeClient};
 #[derive(Args)]
 pub struct FailJobArgs {
     // the unique job identifier, as obtained when activating the job
@@ -44,16 +44,10 @@ impl From<&FailJobArgs> for FailJobRequest {
 impl ExecuteZeebeCommand for FailJobArgs {
     type Output = FailJobResponse;
 
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
+        client: &mut ZeebeClient,
     ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
     {
         Ok(client
             .fail_job(FailJobRequest::from(&self))

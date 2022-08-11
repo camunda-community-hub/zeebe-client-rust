@@ -6,9 +6,9 @@ use tonic::{
     client::GrpcService,
     codegen::{Body, Bytes, StdError},
 };
-use zeebe_client::api::{
+use zeebe_client::{api::{
     gateway_client::GatewayClient, DeployResourceRequest, DeployResourceResponse, Resource,
-};
+}, ZeebeClient};
 
 use crate::ExecuteZeebeCommand;
 use color_eyre::Result;
@@ -22,16 +22,10 @@ pub(crate) struct DeployArgs {
 impl ExecuteZeebeCommand for DeployArgs {
     type Output = DeployResourceResponse;
 
-    async fn execute<Service: Send>(
+    async fn execute(
         self,
-        client: &mut GatewayClient<Service>,
+        client: &mut ZeebeClient,
     ) -> Result<Self::Output>
-    where
-        Service: tonic::client::GrpcService<tonic::body::BoxBody>,
-        Service::Error: Into<StdError>,
-        Service::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <Service::ResponseBody as Body>::Error: Into<StdError> + Send,
-        <Service as GrpcService<tonic::body::BoxBody>>::Future: Send,
     {
         Ok(client
             .deploy_resource(DeployResourceRequest::try_from(&self)?)
