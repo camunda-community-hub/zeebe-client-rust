@@ -1,3 +1,4 @@
+use oauth2::{basic::BasicClient, TokenUrl, ClientSecret, AuthUrl, ClientId, url::ParseError};
 use tonic::service::Interceptor;
 
 #[derive(Debug)]
@@ -9,10 +10,20 @@ pub struct OAuth2Config {
 }
 
 pub struct OAuth2Provider {
+    client: oauth2::basic::BasicClient,
     config: OAuth2Config,
 }
 
 impl OAuth2Provider {
+    fn from_config(config: OAuth2Config) -> Result<OAuth2Provider, ParseError> {
+        let client = BasicClient::new(
+            ClientId::new(config.client_id.clone()),
+            Some(ClientSecret::new(config.client_secret.clone())),
+            AuthUrl::new(config.auth_server.clone())?,
+            Some(TokenUrl::new(config.auth_server.clone())?),
+        );
+        Ok(OAuth2Provider {config, client})
+    }
     fn get_token(&mut self) -> String {
         "fake token".to_owned()
     }
@@ -26,10 +37,10 @@ impl AuthInterceptor {
     pub fn none() -> AuthInterceptor {
         AuthInterceptor { auth: None }
     }
-    pub fn oauth2(config: OAuth2Config) -> AuthInterceptor {
-        AuthInterceptor {
-            auth: Some(OAuth2Provider { config }),
-        }
+    pub fn oauth2(config: OAuth2Config) -> Result<AuthInterceptor, ParseError> {
+        Ok(AuthInterceptor {
+            auth: Some(OAuth2Provider::from_config(config)?),
+        })
     }
 }
 

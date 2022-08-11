@@ -2,6 +2,7 @@ pub mod auth;
 
 use auth::{AuthInterceptor, OAuth2Config};
 use generated_api::gateway_client::GatewayClient;
+use oauth2::url::ParseError;
 use thiserror::Error;
 use tracing::instrument;
 
@@ -44,6 +45,8 @@ pub enum ConnectionError {
     Transport(#[from] transport::Error),
     #[error(transparent)]
     Http(#[from] http::Error),
+    #[error(transparent)]
+    Oauth2(#[from] ParseError),
 }
 
 struct FakeInterceptor {}
@@ -79,7 +82,7 @@ pub async fn connect(
         .build()?;
     let interceptor = match auth {
         Authentication::Unauthenticated => AuthInterceptor::none(),
-        Authentication::Oauth2(oauth_config) => AuthInterceptor::oauth2(oauth_config),
+        Authentication::Oauth2(oauth_config) => AuthInterceptor::oauth2(oauth_config)?,
     };
     tracing::debug!("Connecting to {}", uri);
     let channel = if insecure {
