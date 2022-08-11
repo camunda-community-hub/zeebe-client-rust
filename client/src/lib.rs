@@ -1,18 +1,12 @@
 pub mod auth;
 
-
-
 use auth::{AuthInterceptor, OAuth2Config};
 use generated_api::gateway_client::GatewayClient;
 use thiserror::Error;
 use tracing::instrument;
 
 use tonic::{
-    codegen::{
-        http::{
-            self,
-        },
-    },
+    codegen::http::{self},
     service::Interceptor,
     transport::{self, Channel, ClientTlsConfig, Uri},
 };
@@ -63,16 +57,19 @@ impl Interceptor for FakeInterceptor {
 pub type ZeebeClient =
     GatewayClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>;
 
-#[instrument]
+#[instrument(level = "debug")]
 pub async fn connect(
     conn: Connection,
     auth: Authentication,
 ) -> Result<ZeebeClient, ConnectionError> {
+    let insecure = match conn {
+        Connection::Address { insecure, .. } => insecure,
+        Connection::HostPort { insecure, .. } => insecure,
+    };
     let uri = Uri::builder()
-        .scheme(match &conn {
-            Connection::Address { insecure: true, .. } => "http",
-            Connection::HostPort { insecure: true, .. } => "http",
-            _ => "https",
+        .scheme(match insecure {
+            true => "http",
+            false => "https",
         })
         .authority(match &conn {
             Connection::Address { addr, .. } => addr.to_owned(),
@@ -85,8 +82,11 @@ pub async fn connect(
         Authentication::Oauth2(oauth_config) => AuthInterceptor::oauth2(oauth_config),
     };
     tracing::debug!("Connecting to {}", uri);
-
-    let channel = Channel::builder(uri).tls_config(ClientTlsConfig::new())?;
+    let channel = if insecure {
+        Channel::builder(uri)
+    } else {
+        Channel::builder(uri).tls_config(ClientTlsConfig::new())?
+    };
     Ok(api::gateway_client::GatewayClient::with_interceptor(
         channel.connect().await?,
         interceptor,

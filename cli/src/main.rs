@@ -47,7 +47,7 @@ struct Authentication {
 #[derive(Parser)]
 #[clap(group = clap::ArgGroup::new("connection"))]
 struct Connection {
-    #[clap(long, default_value_t = false)]
+    #[clap(long)]
     insecure: bool,
 
     #[clap(long, value_parser, group = "connection", env = "ZEEBE_ADDRESS")]
