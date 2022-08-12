@@ -75,16 +75,29 @@ struct Connection {
 
 #[derive(Subcommand)]
 enum Commands {
+    // status
     Status(status::StatusArgs), //aka topology
+
+    // deployment
     DeployResource(deploy_resource::DeployResourceArgs),
-    ResolveIncident(resolve_incident::ResolveIncidentArgs),
-    CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
-    FailJob(fail_job::FailJobArgs),
+
+    // process instance
     CreateProcessInstance(create_process_instance::CreateProcessInstanceArgs),
+    CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
+
+    // message
     PublishMessage(publish_message::PublishMessageArgs),
-    UpdateRetries(update_retries::UpdateRetriesArgs),
+
+    // incident
+    ResolveIncident(resolve_incident::ResolveIncidentArgs),
+
+    // variables
     SetVariables(set_variables::SetVariablesArgs),
+
+    //jobs
     ActivateJobs(activate_jobs::ActivateJobsArgs),
+    FailJob(fail_job::FailJobArgs),
+    UpdateRetries(update_retries::UpdateRetriesArgs),
     ThrowError(throw_error::ThrowErrorArgs),
 }
 
@@ -158,17 +171,17 @@ async fn main() -> Result<()> {
     let mut client: ZeebeClient =
         zeebe_client::connect(cli.connection.into(), cli.auth.try_into()?).await?;
     let response: Box<dyn Debug> = match cli.command {
-        Commands::Status(args) => Box::new(args.execute(&mut client).await?),
-        Commands::DeployResource(args) => Box::new(args.execute(&mut client).await?),
-        Commands::ResolveIncident(args) => Box::new(args.execute(&mut client).await?),
-        Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
-        Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
-        Commands::CreateProcessInstance(args) => args.execute(&mut client).await?, // Already boxed, because it could be one of two results
-        Commands::PublishMessage(args) => Box::new(args.execute(&mut client).await?),
-        Commands::UpdateRetries(args) => Box::new(args.execute(&mut client).await?),
-        Commands::SetVariables(args) => Box::new(args.execute(&mut client).await?),
         Commands::ActivateJobs(args) => Box::new(args.execute(&mut client).await?),
+        Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
+        Commands::CreateProcessInstance(args) => args.execute(&mut client).await?, // Already boxed, because it could be one of two results
+        Commands::DeployResource(args) => Box::new(args.execute(&mut client).await?),
+        Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
+        Commands::PublishMessage(args) => Box::new(args.execute(&mut client).await?),
+        Commands::ResolveIncident(args) => Box::new(args.execute(&mut client).await?),
+        Commands::SetVariables(args) => Box::new(args.execute(&mut client).await?),
+        Commands::Status(args) => Box::new(args.execute(&mut client).await?),
         Commands::ThrowError(args) => Box::new(args.execute(&mut client).await?),
+        Commands::UpdateRetries(args) => Box::new(args.execute(&mut client).await?),
     };
 
     println!("{:#?}", response);
