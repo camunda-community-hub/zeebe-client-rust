@@ -5,9 +5,16 @@
 
 
 # Zeebe Rust Client
-Rust client for Zeebe
+Rust client for Zeebe in early stages. Suitable for early adopters
 
-In very early stages.
+Features
+* CLI for all commands based on Zeebe Client 8.0
+* Support for OAuth authentication
+
+Next Steps
+1. Worker implementation
+2. Publish crates
+3. Build an application that uses this Rust client
 
 ## Prior Work/Alternatives
 
@@ -23,7 +30,7 @@ Your best choice is probably: https://github.com/OutThereLabs/zeebe-rust
 
 ## CLI
 
-Conventions:
+**Conventions for CLI Argument Annotations**
 * Named parameters by default
 * Use positional parameters only if there is just one parameter, or just one required parameter
 * For required parameters use short and long version `#[clap(short, long)]`
