@@ -128,7 +128,7 @@ impl TryFrom<Authentication> for zeebe_client::Authentication {
                     client_id,
                     client_secret,
                     auth_server: auth.authorization_server,
-                    audience: "zeebe".to_owned(),
+                    audience: "zeebe.camunda.io".to_owned(),
                 },
             )),
             _ => Err(color_eyre::eyre::eyre!(
