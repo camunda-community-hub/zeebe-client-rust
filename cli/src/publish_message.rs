@@ -13,10 +13,11 @@ use crate::ExecuteZeebeCommand;
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct PublishMessageArgs {
+    #[clap(short, long)]
     name: String,
-    #[clap(long)]
+    #[clap(short, long)]
     correlation_key: String,
-    #[clap(long)]
+    #[clap(long, required = false)]
     message_id: String,
     #[clap(long, required = false, default_value = "")]
     variables: String,

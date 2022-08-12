@@ -9,7 +9,6 @@ use zeebe_client::{
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct CompleteJobArgs {
-    #[clap(short, long)]
     job_key: i64,
 
     #[clap(long, required = false, default_value = "")]

@@ -11,18 +11,18 @@ use zeebe_client::{
 #[derive(Args)]
 pub(crate) struct FailJobArgs {
     // the unique job identifier, as obtained when activating the job
-    #[clap(required = true, short, long)]
+    #[clap(short, long)]
     job_key: i64,
     // the amount of retries the job should have left
-    #[clap(required = true, short, long)]
+    #[clap(short, long)]
     retries: i32,
     // an optional message describing why the job failed
     // this is particularly useful if a job runs out of retries and an incident is raised,
     // as it this message can help explain why an incident was raised
-    #[clap(required = false, short, long, default_value = "")]
+    #[clap(long, required = false, default_value = "")]
     error_message: String,
     // the back off timeout for the next retry
-    #[clap(required = false, short = 'b', long, default_value = "0")]
+    #[clap(long, required = false, default_value_t = 0)]
     retry_back_off: i64,
 }
 

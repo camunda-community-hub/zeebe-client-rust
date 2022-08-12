@@ -18,3 +18,13 @@ These repositories also implement Zeebe clients for Rust. Most of them are more 
 
 Your best choice is probably: https://github.com/OutThereLabs/zeebe-rust
 
+
+# Developer Guide
+
+## CLI
+
+Conventions:
+* Named parameters by default
+* Use positional parameters only if there is just one parameter, or just one required parameter
+* For required parameters use short and long version `#[clap(short, long)]`
+* For optional parameters use long version only `#[clap(long, default_value_t = 1)]`

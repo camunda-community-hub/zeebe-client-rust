@@ -18,7 +18,7 @@ pub(crate) struct ThrowErrorArgs {
     #[clap(short = 'c', long)]
     error_code: String,
     // an optional error message that provides additional context
-    #[clap(short = 'm', long, default_value = "")]
+    #[clap(long, default_value = "")]
     error_message: String,
 }
 

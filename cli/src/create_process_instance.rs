@@ -9,7 +9,7 @@ use zeebe_client::{
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct CreateProcessInstanceArgs {
-    process: i64,
+    process_instance_key: i64,
 
     #[clap(long, required = false)]
     with_results: bool,
@@ -22,7 +22,7 @@ pub(crate) struct CreateProcessInstanceArgs {
 impl From<&CreateProcessInstanceArgs> for CreateProcessInstanceRequest {
     fn from(args: &CreateProcessInstanceArgs) -> Self {
         CreateProcessInstanceRequest {
-            process_definition_key: args.process,
+            process_definition_key: args.process_instance_key,
             bpmn_process_id: String::new(),
             version: args.version,
             variables: args.variables.clone(),

@@ -13,8 +13,9 @@ use zeebe_client::{
 #[derive(Args)]
 
 pub(crate) struct SetVariablesArgs {
+    #[clap(short, long)]
     element_instance_key: i64,
-    #[clap(long)]
+    #[clap(short, long)]
     local: bool,
     #[clap(long, value_parser, group = "value")]
     path: Option<PathBuf>,
