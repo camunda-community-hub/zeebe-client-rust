@@ -1,6 +1,6 @@
 mod activate;
 mod cancel_process_instance;
-mod create;
+mod create_process_instance;
 mod deploy_resource;
 mod fail_job;
 mod publish;
@@ -80,7 +80,7 @@ enum Commands {
     ResolveIncident(resolve_incident::ResolveIncidentArgs),
     CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
     FailJob(fail_job::FailJobArgs),
-    Create(create::CreateArgs),
+    CreateProcessInstance(create_process_instance::CreateProcessInstanceArgs),
     Publish(publish::PublishArgs),
     UpdateRetries(retries::UpdateRetriesArgs),
     SetVariables(set_variables::SetVariablesArgs),
@@ -163,7 +163,7 @@ async fn main() -> Result<()> {
         Commands::ResolveIncident(args) => Box::new(args.execute(&mut client).await?),
         Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
         Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
-        Commands::Create(args) => args.execute(&mut client).await?, // Already boxed
+        Commands::CreateProcessInstance(args) => args.execute(&mut client).await?, // Already boxed, because it could be one of two results
         Commands::Publish(args) => Box::new(args.execute(&mut client).await?),
         Commands::UpdateRetries(args) => Box::new(args.execute(&mut client).await?),
         Commands::SetVariables(args) => Box::new(args.execute(&mut client).await?),

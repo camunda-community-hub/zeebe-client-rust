@@ -1,6 +1,6 @@
 use crate::{Debug, ExecuteZeebeCommand};
 use async_trait::async_trait;
-use clap::{Args, Subcommand};
+use clap::Args;
 use color_eyre::eyre::Result;
 use zeebe_client::{
     api::{CreateProcessInstanceRequest, CreateProcessInstanceWithResultRequest},
@@ -8,18 +8,7 @@ use zeebe_client::{
 };
 
 #[derive(Args, Clone, Debug)]
-pub(crate) struct CreateArgs {
-    #[clap(subcommand)]
-    resource_type: CreateResourceType,
-}
-
-#[derive(Subcommand, Clone, Debug)]
-enum CreateResourceType {
-    Instance(CreateInstanceArgs),
-}
-
-#[derive(Args, Clone, Debug)]
-struct CreateInstanceArgs {
+pub(crate) struct CreateProcessInstanceArgs {
     process: i64,
 
     #[clap(long, required = false)]
@@ -30,8 +19,8 @@ struct CreateInstanceArgs {
     version: i32,
 }
 
-impl From<&CreateInstanceArgs> for CreateProcessInstanceRequest {
-    fn from(args: &CreateInstanceArgs) -> Self {
+impl From<&CreateProcessInstanceArgs> for CreateProcessInstanceRequest {
+    fn from(args: &CreateProcessInstanceArgs) -> Self {
         CreateProcessInstanceRequest {
             process_definition_key: args.process,
             bpmn_process_id: String::new(),
@@ -43,22 +32,18 @@ impl From<&CreateInstanceArgs> for CreateProcessInstanceRequest {
 }
 
 #[async_trait]
-impl ExecuteZeebeCommand for CreateArgs {
+impl ExecuteZeebeCommand for CreateProcessInstanceArgs {
     type Output = Box<dyn Debug>;
 
     #[tracing::instrument(skip(client))]
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
-        match &self.resource_type {
-            CreateResourceType::Instance(args) => {
-                handle_create_instance_command(client, args).await
-            }
-        }
+        handle_create_instance_command(client, &self).await
     }
 }
 
 async fn handle_create_instance_command(
     client: &mut ZeebeClient,
-    args: &CreateInstanceArgs,
+    args: &CreateProcessInstanceArgs,
 ) -> Result<Box<dyn Debug>> {
     let request: CreateProcessInstanceRequest = args.into();
     match args.with_results {
