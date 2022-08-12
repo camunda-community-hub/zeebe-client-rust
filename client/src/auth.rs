@@ -1,8 +1,7 @@
 use oauth2::{
     basic::{BasicClient, BasicTokenResponse},
     url::ParseError,
-    AuthUrl, ClientId, ClientSecret,
-    TokenResponse, TokenUrl,
+    AuthUrl, ClientId, ClientSecret, TokenResponse, TokenUrl,
 };
 use thiserror::Error;
 use tonic::{metadata::MetadataValue, service::Interceptor};
@@ -18,7 +17,7 @@ pub struct OAuth2Config {
 
 #[derive(Debug)]
 pub struct OAuth2Provider {
-    client: oauth2::basic::BasicClient,
+    client: BasicClient,
     config: OAuth2Config,
 }
 
@@ -35,22 +34,22 @@ impl OAuth2Provider {
             Some(ClientSecret::new(config.client_secret.clone())),
             AuthUrl::new(config.auth_server.clone())?,
             Some(TokenUrl::new(config.auth_server.clone())?),
-        ).set_auth_type(oauth2::AuthType::RequestBody);
+        )
+        .set_auth_type(oauth2::AuthType::RequestBody);
         Ok(OAuth2Provider { config, client })
     }
 
     #[instrument]
     fn get_token(&mut self) -> Result<BasicTokenResponse, AuthError> {
-        let request = self.client
+        let request = self
+            .client
             .exchange_client_credentials()
             .add_extra_param("audience", &self.config.audience);
         tracing::debug!(request = ?request, "requesting token");
-        request
-            .request(oauth2::ureq::http_client)
-            .map_err(|e| {
-                tracing::error!(error = ?e, "request to get token failed");
-                AuthError::TokenRequestFailed
-            })
+        request.request(oauth2::ureq::http_client).map_err(|e| {
+            tracing::error!(error = ?e, "request to get token failed");
+            AuthError::TokenRequestFailed
+        })
     }
 }
 
@@ -79,10 +78,10 @@ impl Interceptor for AuthInterceptor {
         if let Some(provider) = &mut self.auth {
             let token = match provider.get_token() {
                 Ok(token) => token.access_token().secret().to_owned(),
-                Err(e) => { 
+                Err(e) => {
                     tracing::error!(error = ?e, "failed to get token");
                     return Err(tonic::Status::unauthenticated("failed to get token"));
-                },
+                }
             };
             let header_value = format!("Bearer {}", token);
             request.metadata_mut().insert(
