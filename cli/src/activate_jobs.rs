@@ -1,6 +1,6 @@
 use crate::{Debug, ExecuteZeebeCommand};
 use async_trait::async_trait;
-use clap::{Args, Subcommand};
+use clap::Args;
 use color_eyre::Result;
 
 use zeebe_client::{
@@ -9,18 +9,7 @@ use zeebe_client::{
 };
 
 #[derive(Debug, Args)]
-pub(crate) struct ActivateArgs {
-    #[clap(subcommand)]
-    resource_type: ActivateResourceType,
-}
-
-#[derive(Debug, Subcommand)]
-enum ActivateResourceType {
-    Jobs(ActivateJobsArgs),
-}
-
-#[derive(Args, Debug)]
-struct ActivateJobsArgs {
+pub(crate) struct ActivateJobsArgs {
     job_type: String,
     #[clap(long, default_value_t = 1)]
     max_jobs_to_activate: u32,
@@ -45,26 +34,18 @@ impl From<&ActivateJobsArgs> for ActivateJobsRequest {
 }
 
 #[async_trait]
-impl ExecuteZeebeCommand for ActivateArgs {
+impl ExecuteZeebeCommand for ActivateJobsArgs {
     type Output = Vec<ActivateJobsResponse>;
 
     #[tracing::instrument(skip(client))]
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
-        match &self.resource_type {
-            ActivateResourceType::Jobs(args) => handle_activate_jobs_command(client, args).await,
+        let args = &self;
+        let request: ActivateJobsRequest = args.into();
+        let mut stream = client.activate_jobs(request).await?.into_inner();
+        let mut result = Vec::with_capacity(args.max_jobs_to_activate.try_into().unwrap());
+        while let Some(response) = stream.message().await? {
+            result.push(response);
         }
+        Ok(result)
     }
-}
-
-async fn handle_activate_jobs_command(
-    client: &mut ZeebeClient,
-    args: &ActivateJobsArgs,
-) -> Result<Vec<ActivateJobsResponse>> {
-    let request: ActivateJobsRequest = args.into();
-    let mut stream = client.activate_jobs(request).await?.into_inner();
-    let mut result = Vec::with_capacity(args.max_jobs_to_activate.try_into().unwrap());
-    while let Some(response) = stream.message().await? {
-        result.push(response);
-    }
-    Ok(result)
 }

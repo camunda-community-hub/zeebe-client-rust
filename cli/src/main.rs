@@ -1,4 +1,4 @@
-mod activate;
+mod activate_jobs;
 mod cancel_process_instance;
 mod create_process_instance;
 mod deploy_resource;
@@ -84,7 +84,7 @@ enum Commands {
     PublishMessage(publish_message::PublishMessageArgs),
     UpdateRetries(update_retries::UpdateRetriesArgs),
     SetVariables(set_variables::SetVariablesArgs),
-    Activate(activate::ActivateArgs),
+    ActivateJobs(activate_jobs::ActivateJobsArgs),
     ThrowError(throw_error::ThrowErrorArgs),
 }
 
@@ -167,7 +167,7 @@ async fn main() -> Result<()> {
         Commands::PublishMessage(args) => Box::new(args.execute(&mut client).await?),
         Commands::UpdateRetries(args) => Box::new(args.execute(&mut client).await?),
         Commands::SetVariables(args) => Box::new(args.execute(&mut client).await?),
-        Commands::Activate(args) => Box::new(args.execute(&mut client).await?),
+        Commands::ActivateJobs(args) => Box::new(args.execute(&mut client).await?),
         Commands::ThrowError(args) => Box::new(args.execute(&mut client).await?),
     };
 
