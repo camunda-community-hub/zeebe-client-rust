@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use color_eyre::eyre::Result;
 use std::fmt::Debug;
 
-use clap::{Args, Subcommand};
+use clap::Args;
 
 use zeebe_client::{
     api::{PublishMessageRequest, PublishMessageResponse},
@@ -13,17 +13,6 @@ use crate::ExecuteZeebeCommand;
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct PublishArgs {
-    #[clap(subcommand)]
-    resource_type: PublishResourceType,
-}
-
-#[derive(Subcommand, Clone, Debug)]
-enum PublishResourceType {
-    Message(PublishMessageArgs),
-}
-
-#[derive(Args, Clone, Debug)]
-struct PublishMessageArgs {
     name: String,
     #[clap(long)]
     correlation_key: String,
@@ -35,8 +24,8 @@ struct PublishMessageArgs {
     ttl: i64, // todo: should be duration
 }
 
-impl From<&PublishMessageArgs> for PublishMessageRequest {
-    fn from(args: &PublishMessageArgs) -> Self {
+impl From<&PublishArgs> for PublishMessageRequest {
+    fn from(args: &PublishArgs) -> Self {
         PublishMessageRequest {
             name: args.name.to_owned(),
             correlation_key: args.correlation_key.to_owned(),
@@ -53,18 +42,8 @@ impl ExecuteZeebeCommand for PublishArgs {
 
     #[tracing::instrument(skip(client))]
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
-        match &self.resource_type {
-            PublishResourceType::Message(args) => {
-                handle_publish_message_command(client, args).await
-            }
-        }
+        let args = &self;
+        let request: PublishMessageRequest = args.into();
+        Ok(client.publish_message(request).await?.into_inner())
     }
-}
-
-async fn handle_publish_message_command(
-    client: &mut ZeebeClient,
-    args: &PublishMessageArgs,
-) -> Result<PublishMessageResponse> {
-    let request: PublishMessageRequest = args.into();
-    Ok(client.publish_message(request).await?.into_inner())
 }
