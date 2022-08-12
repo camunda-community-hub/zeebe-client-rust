@@ -3,7 +3,10 @@ use async_trait::async_trait;
 use clap::{Args, Subcommand};
 use color_eyre::Result;
 
-use zeebe_client::{api::ActivateJobsRequest, ZeebeClient};
+use zeebe_client::{
+    api::{ActivateJobsRequest, ActivateJobsResponse},
+    ZeebeClient,
+};
 
 #[derive(Debug, Args)]
 pub(crate) struct ActivateArgs {
@@ -43,7 +46,7 @@ impl From<&ActivateJobsArgs> for ActivateJobsRequest {
 
 #[async_trait]
 impl ExecuteZeebeCommand for ActivateArgs {
-    type Output = Box<dyn Debug>;
+    type Output = Vec<ActivateJobsResponse>;
 
     #[tracing::instrument(skip(client))]
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
@@ -56,12 +59,12 @@ impl ExecuteZeebeCommand for ActivateArgs {
 async fn handle_activate_jobs_command(
     client: &mut ZeebeClient,
     args: &ActivateJobsArgs,
-) -> Result<Box<dyn Debug>> {
+) -> Result<Vec<ActivateJobsResponse>> {
     let request: ActivateJobsRequest = args.into();
     let mut stream = client.activate_jobs(request).await?.into_inner();
     let mut result = Vec::with_capacity(args.max_jobs_to_activate.try_into().unwrap());
     while let Some(response) = stream.message().await? {
         result.push(response);
     }
-    Ok(Box::new(result))
+    Ok(result)
 }
