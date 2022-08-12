@@ -164,7 +164,7 @@ async fn main() -> Result<()> {
         Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
         Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
         Commands::Create(args) => args.execute(&mut client).await?, // Already boxed
-        Commands::Publish(args) => args.execute(&mut client).await?, // Already boxed,
+        Commands::Publish(args) => Box::new(args.execute(&mut client).await?),
         Commands::UpdateRetries(args) => Box::new(args.execute(&mut client).await?),
         Commands::SetVariables(args) => Box::new(args.execute(&mut client).await?),
         Commands::Activate(args) => Box::new(args.execute(&mut client).await?),

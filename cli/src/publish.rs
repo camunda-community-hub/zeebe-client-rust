@@ -4,7 +4,10 @@ use std::fmt::Debug;
 
 use clap::{Args, Subcommand};
 
-use zeebe_client::{api::PublishMessageRequest, ZeebeClient};
+use zeebe_client::{
+    api::{PublishMessageRequest, PublishMessageResponse},
+    ZeebeClient,
+};
 
 use crate::ExecuteZeebeCommand;
 
@@ -46,7 +49,7 @@ impl From<&PublishMessageArgs> for PublishMessageRequest {
 
 #[async_trait]
 impl ExecuteZeebeCommand for PublishArgs {
-    type Output = Box<dyn Debug>;
+    type Output = PublishMessageResponse;
 
     #[tracing::instrument(skip(client))]
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
@@ -61,9 +64,7 @@ impl ExecuteZeebeCommand for PublishArgs {
 async fn handle_publish_message_command(
     client: &mut ZeebeClient,
     args: &PublishMessageArgs,
-) -> Result<Box<dyn Debug>> {
+) -> Result<PublishMessageResponse> {
     let request: PublishMessageRequest = args.into();
-    Ok(Box::new(
-        client.publish_message(request).await?.into_inner(),
-    ))
+    Ok(client.publish_message(request).await?.into_inner())
 }
