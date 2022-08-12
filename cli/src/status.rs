@@ -9,7 +9,7 @@ use zeebe_client::{
 };
 
 #[derive(Args)]
-pub struct StatusArgs {}
+pub(crate) struct StatusArgs {}
 
 #[async_trait]
 impl ExecuteZeebeCommand for StatusArgs {

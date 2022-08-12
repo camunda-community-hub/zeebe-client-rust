@@ -10,7 +10,7 @@ use zeebe_client::{
 use crate::ExecuteZeebeCommand;
 
 #[derive(Args)]
-pub struct ResolveIncidentArgs {
+pub(crate) struct ResolveIncidentArgs {
     incident_key: i64,
 }
 

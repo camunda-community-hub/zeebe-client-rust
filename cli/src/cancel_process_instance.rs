@@ -10,7 +10,7 @@ use zeebe_client::{
 use crate::ExecuteZeebeCommand;
 
 #[derive(Args)]
-pub struct CancelProcessInstanceArgs {
+pub(crate) struct CancelProcessInstanceArgs {
     process_instance_key: i64,
 }
 

@@ -9,7 +9,7 @@ use zeebe_client::{
     ZeebeClient,
 };
 #[derive(Args)]
-pub struct FailJobArgs {
+pub(crate) struct FailJobArgs {
     // the unique job identifier, as obtained when activating the job
     #[clap(required = true, short, long)]
     job_key: i64,

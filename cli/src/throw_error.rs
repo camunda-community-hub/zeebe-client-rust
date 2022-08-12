@@ -10,7 +10,7 @@ use zeebe_client::{
 use crate::ExecuteZeebeCommand;
 
 #[derive(Args)]
-pub struct ThrowErrorArgs {
+pub(crate) struct ThrowErrorArgs {
     // the unique job identifier, as obtained when activating the job
     #[clap(short, long)]
     job_key: i64,
