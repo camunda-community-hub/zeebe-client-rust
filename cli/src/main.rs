@@ -5,10 +5,10 @@ mod deploy_resource;
 mod fail_job;
 mod publish_message;
 mod resolve_incident;
-mod retries;
 mod set_variables;
 mod status;
 mod throw_error;
+mod update_retries;
 
 use std::fmt::Debug;
 
@@ -82,7 +82,7 @@ enum Commands {
     FailJob(fail_job::FailJobArgs),
     CreateProcessInstance(create_process_instance::CreateProcessInstanceArgs),
     PublishMessage(publish_message::PublishMessageArgs),
-    UpdateRetries(retries::UpdateRetriesArgs),
+    UpdateRetries(update_retries::UpdateRetriesArgs),
     SetVariables(set_variables::SetVariablesArgs),
     Activate(activate::ActivateArgs),
     ThrowError(throw_error::ThrowErrorArgs),
