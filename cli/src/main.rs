@@ -81,7 +81,7 @@ enum Commands {
     CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
     FailJob(fail_job::FailJobArgs),
     CreateProcessInstance(create_process_instance::CreateProcessInstanceArgs),
-    PublishMessage(publish_message::PublishArgs),
+    PublishMessage(publish_message::PublishMessageArgs),
     UpdateRetries(retries::UpdateRetriesArgs),
     SetVariables(set_variables::SetVariablesArgs),
     Activate(activate::ActivateArgs),

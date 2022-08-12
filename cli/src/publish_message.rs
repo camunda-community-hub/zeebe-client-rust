@@ -12,7 +12,7 @@ use zeebe_client::{
 use crate::ExecuteZeebeCommand;
 
 #[derive(Args, Clone, Debug)]
-pub(crate) struct PublishArgs {
+pub(crate) struct PublishMessageArgs {
     name: String,
     #[clap(long)]
     correlation_key: String,
@@ -24,8 +24,8 @@ pub(crate) struct PublishArgs {
     ttl: i64, // todo: should be duration
 }
 
-impl From<&PublishArgs> for PublishMessageRequest {
-    fn from(args: &PublishArgs) -> Self {
+impl From<&PublishMessageArgs> for PublishMessageRequest {
+    fn from(args: &PublishMessageArgs) -> Self {
         PublishMessageRequest {
             name: args.name.to_owned(),
             correlation_key: args.correlation_key.to_owned(),
@@ -37,7 +37,7 @@ impl From<&PublishArgs> for PublishMessageRequest {
 }
 
 #[async_trait]
-impl ExecuteZeebeCommand for PublishArgs {
+impl ExecuteZeebeCommand for PublishMessageArgs {
     type Output = PublishMessageResponse;
 
     #[tracing::instrument(skip(client))]
