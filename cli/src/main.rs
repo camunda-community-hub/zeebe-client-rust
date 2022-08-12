@@ -3,8 +3,8 @@ mod cancel_process_instance;
 mod create;
 mod deploy_resource;
 mod fail_job;
-mod incident;
 mod publish;
+mod resolve_incident;
 mod retries;
 mod set_variables;
 mod status;
@@ -77,7 +77,7 @@ struct Connection {
 enum Commands {
     Status(status::StatusArgs), //aka topology
     DeployResource(deploy_resource::DeployResourceArgs),
-    ResolveIncident(incident::IncidentArgs),
+    ResolveIncident(resolve_incident::ResolveIncidentArgs),
     CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
     FailJob(fail_job::FailJobArgs),
     Create(create::CreateArgs),

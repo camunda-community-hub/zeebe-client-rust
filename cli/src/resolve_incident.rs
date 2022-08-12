@@ -10,12 +10,12 @@ use zeebe_client::{
 use crate::ExecuteZeebeCommand;
 
 #[derive(Args)]
-pub struct IncidentArgs {
+pub struct ResolveIncidentArgs {
     incident_key: i64,
 }
 
 #[async_trait]
-impl ExecuteZeebeCommand for IncidentArgs {
+impl ExecuteZeebeCommand for ResolveIncidentArgs {
     type Output = ResolveIncidentResponse;
 
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
