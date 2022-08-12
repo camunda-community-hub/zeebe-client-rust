@@ -12,12 +12,12 @@ use crate::ExecuteZeebeCommand;
 use color_eyre::Result;
 
 #[derive(Args)]
-pub(crate) struct DeployArgs {
+pub(crate) struct DeployResourceArgs {
     #[clap(required = true, value_parser, value_name = "FILE")]
     resources: Vec<PathBuf>,
 }
 #[async_trait]
-impl ExecuteZeebeCommand for DeployArgs {
+impl ExecuteZeebeCommand for DeployResourceArgs {
     type Output = DeployResourceResponse;
 
     async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output> {
@@ -28,10 +28,10 @@ impl ExecuteZeebeCommand for DeployArgs {
     }
 }
 
-impl TryFrom<&DeployArgs> for DeployResourceRequest {
+impl TryFrom<&DeployResourceArgs> for DeployResourceRequest {
     type Error = color_eyre::Report;
 
-    fn try_from(args: &DeployArgs) -> Result<DeployResourceRequest, Self::Error> {
+    fn try_from(args: &DeployResourceArgs) -> Result<DeployResourceRequest, Self::Error> {
         let mut resources = Vec::with_capacity(args.resources.len());
         for path in &args.resources {
             let resource = Resource {

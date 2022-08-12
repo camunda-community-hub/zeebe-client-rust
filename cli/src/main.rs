@@ -1,7 +1,7 @@
 mod activate;
 mod cancel_process_instance;
 mod create;
-mod deploy;
+mod deploy_resource;
 mod fail_job;
 mod incident;
 mod publish;
@@ -75,8 +75,8 @@ struct Connection {
 
 #[derive(Subcommand)]
 enum Commands {
-    Status(status::StatusArgs),
-    Deploy(deploy::DeployArgs),
+    Status(status::StatusArgs), //aka topology
+    DeployResource(deploy_resource::DeployResourceArgs),
     ResolveIncident(incident::IncidentArgs),
     CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
     FailJob(fail_job::FailJobArgs),
@@ -159,7 +159,7 @@ async fn main() -> Result<()> {
         zeebe_client::connect(cli.connection.into(), cli.auth.try_into()?).await?;
     let response: Box<dyn Debug> = match cli.command {
         Commands::Status(args) => Box::new(args.execute(&mut client).await?),
-        Commands::Deploy(args) => Box::new(args.execute(&mut client).await?),
+        Commands::DeployResource(args) => Box::new(args.execute(&mut client).await?),
         Commands::ResolveIncident(args) => Box::new(args.execute(&mut client).await?),
         Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
         Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
