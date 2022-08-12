@@ -1,5 +1,6 @@
 mod activate_jobs;
 mod cancel_process_instance;
+mod complete_job;
 mod create_process_instance;
 mod deploy_resource;
 mod fail_job;
@@ -96,6 +97,7 @@ enum Commands {
 
     //jobs
     ActivateJobs(activate_jobs::ActivateJobsArgs),
+    CompleteJob(complete_job::CompleteJobArgs),
     FailJob(fail_job::FailJobArgs),
     UpdateRetries(update_retries::UpdateRetriesArgs),
     ThrowError(throw_error::ThrowErrorArgs),
@@ -173,6 +175,7 @@ async fn main() -> Result<()> {
     let response: Box<dyn Debug> = match cli.command {
         Commands::ActivateJobs(args) => Box::new(args.execute(&mut client).await?),
         Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
+        Commands::CompleteJob(args) => Box::new(args.execute(&mut client).await?),
         Commands::CreateProcessInstance(args) => args.execute(&mut client).await?, // Already boxed, because it could be one of two results
         Commands::DeployResource(args) => Box::new(args.execute(&mut client).await?),
         Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
