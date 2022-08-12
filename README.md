@@ -16,6 +16,44 @@ Next Steps
 2. Publish crates
 3. Build an application that uses this Rust client
 
+## Cli Tool
+
+> **Warning**
+> The Cli Tool might leak credentials in log messages
+
+Run `cargo run -- help` to see available commands and options.
+
+**Authentication for Camunda Cloud**
+
+First, [generate and download](https://docs.camunda.io/docs/next/components/console/manage-clusters/manage-api-clients/) client credentials from Console. Let's assume they are in a file called credentials.txt.
+
+The `credentials.txt` file contains environment variables, so let's source them:
+```shell
+$ source credentials.txt
+```
+
+Finally, run the cli tool: 
+
+```shell
+$ cargo run -- status
+TopologyResponse {
+    brokers: [
+        BrokerInfo {
+            node_id: 0,
+...
+```
+
+Alternatively, you can also provide your credentials as arguments:
+
+```shell
+$ cargo run -- --address <ADDRESS> --client-id <CLIENT_ID> --client_secret <CLIENT_SECRET> --authorization-server <AUTH_SERVER> status 
+TopologyResponse {
+    brokers: [
+        BrokerInfo {
+            node_id: 0,
+...
+```
+
 ## Prior Work/Alternatives
 
 These repositories also implement Zeebe clients for Rust. Most of them are more feature-complete than this repository currently, but also a little older.
