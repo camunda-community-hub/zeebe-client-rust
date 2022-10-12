@@ -119,16 +119,17 @@ impl From<Connection> for zeebe_client::Connection {
 }
 
 impl Authentication {
-    fn for_connection(&self, _conn: &zeebe_client::Connection) -> Result<zeebe_client::Authentication> {
+    fn for_connection(&self, conn: &zeebe_client::Connection) -> Result<zeebe_client::Authentication> {
         match (&self.client_id, &self.client_secret) {
             (None, None) => Ok(zeebe_client::Authentication::Unauthenticated),
             (Some(client_id), Some(client_secret)) => {
+                let audience = conn.addr.rsplit_once(':').map(|(authority, _port)| authority).unwrap_or(&conn.addr).to_owned();
                 Ok(zeebe_client::Authentication::Oauth2(
                         zeebe_client::auth::OAuth2Config {
                             client_id: client_id.clone(),
                             client_secret: client_secret.clone(),
                             auth_server: self.authorization_server.clone(),
-                            audience: "zeebe.camunda.io".to_owned(),
+                            audience,
                         },
                 ))
             },
