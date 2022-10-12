@@ -8,7 +8,6 @@ use tracing::instrument;
 
 use tonic::{
     codegen::http::{self},
-    service::Interceptor,
     transport::{self, Channel, ClientTlsConfig, Uri},
 };
 
@@ -47,14 +46,6 @@ pub enum ConnectionError {
     Http(#[from] http::Error),
     #[error(transparent)]
     Oauth2(#[from] ParseError),
-}
-
-struct FakeInterceptor {}
-
-impl Interceptor for FakeInterceptor {
-    fn call(&mut self, _request: tonic::Request<()>) -> Result<tonic::Request<()>, tonic::Status> {
-        todo!()
-    }
 }
 
 pub type ZeebeClient =
