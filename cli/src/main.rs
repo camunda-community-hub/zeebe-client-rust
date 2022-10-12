@@ -15,7 +15,7 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 use clap::{AppSettings, Parser, Subcommand};
-use color_eyre::eyre::Report;
+
 use color_eyre::eyre::Result;
 use zeebe_client::ZeebeClient;
 
@@ -106,35 +106,34 @@ enum Commands {
 impl From<Connection> for zeebe_client::Connection {
     fn from(conn: Connection) -> Self {
         match conn.address {
-            Some(addr) => zeebe_client::Connection::Address {
+            Some(addr) => zeebe_client::Connection {
                 insecure: conn.insecure,
                 addr,
             },
-            None => zeebe_client::Connection::HostPort {
+            None => zeebe_client::Connection {
                 insecure: conn.insecure,
-                host: conn.host,
-                port: conn.port,
+                addr: format!("{}:{}", conn.host, conn.port),
             },
         }
     }
 }
 
-impl TryFrom<Authentication> for zeebe_client::Authentication {
-    type Error = Report;
-
-    fn try_from(auth: Authentication) -> Result<zeebe_client::Authentication> {
-        match (auth.client_id, auth.client_secret) {
+impl Authentication {
+    fn for_connection(&self, _conn: &zeebe_client::Connection) -> Result<zeebe_client::Authentication> {
+        match (&self.client_id, &self.client_secret) {
             (None, None) => Ok(zeebe_client::Authentication::Unauthenticated),
-            (Some(client_id), Some(client_secret)) => Ok(zeebe_client::Authentication::Oauth2(
-                zeebe_client::auth::OAuth2Config {
-                    client_id,
-                    client_secret,
-                    auth_server: auth.authorization_server,
-                    audience: "zeebe.camunda.io".to_owned(),
-                },
-            )),
+            (Some(client_id), Some(client_secret)) => {
+                Ok(zeebe_client::Authentication::Oauth2(
+                        zeebe_client::auth::OAuth2Config {
+                            client_id: client_id.clone(),
+                            client_secret: client_secret.clone(),
+                            auth_server: self.authorization_server.clone(),
+                            audience: "zeebe.camunda.io".to_owned(),
+                        },
+                ))
+            },
             _ => Err(color_eyre::eyre::eyre!(
-                "Partial authentication info, needs at least client id and client secret"
+                    "Partial authentication info, needs at least client id and client secret"
             )),
         }
     }
@@ -170,8 +169,9 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let cli: Cli = Cli::parse();
+    let conn: zeebe_client::Connection = cli.connection.into();
     let mut client: ZeebeClient =
-        zeebe_client::connect(cli.connection.into(), cli.auth.try_into()?).await?;
+        zeebe_client::connect(conn.clone(), cli.auth.for_connection(&conn)?).await?;
     let response: Box<dyn Debug> = match cli.command {
         Commands::ActivateJobs(args) => Box::new(args.execute(&mut client).await?),
         Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),

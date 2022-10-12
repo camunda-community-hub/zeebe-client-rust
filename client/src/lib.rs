@@ -19,17 +19,10 @@ pub mod api {
     pub use super::generated_api::*;
 }
 
-#[derive(Debug)]
-pub enum Connection {
-    Address {
-        insecure: bool,
-        addr: String,
-    },
-    HostPort {
-        insecure: bool,
-        host: String,
-        port: u16,
-    },
+#[derive(Debug, Clone)]
+pub struct Connection {
+    pub insecure: bool,
+    pub addr: String,
 }
 
 #[derive(Debug)]
@@ -56,19 +49,12 @@ pub async fn connect(
     conn: Connection,
     auth: Authentication,
 ) -> Result<ZeebeClient, ConnectionError> {
-    let insecure = match conn {
-        Connection::Address { insecure, .. } => insecure,
-        Connection::HostPort { insecure, .. } => insecure,
-    };
     let uri = Uri::builder()
-        .scheme(match insecure {
+        .scheme(match conn.insecure {
             true => "http",
             false => "https",
         })
-        .authority(match &conn {
-            Connection::Address { addr, .. } => addr.to_owned(),
-            Connection::HostPort { host, port, .. } => format!("{}:{}", host, port),
-        })
+        .authority(conn.addr)
         .path_and_query("")
         .build()?;
     let interceptor = match auth {
@@ -76,7 +62,7 @@ pub async fn connect(
         Authentication::Oauth2(oauth_config) => AuthInterceptor::oauth2(oauth_config)?,
     };
     tracing::debug!("Connecting to {}", uri);
-    let channel = if insecure {
+    let channel = if conn.insecure {
         Channel::builder(uri)
     } else {
         Channel::builder(uri).tls_config(ClientTlsConfig::new())?
