@@ -86,7 +86,7 @@ impl Interceptor for AuthInterceptor {
             let header_value = format!("Bearer {}", token);
             request.metadata_mut().insert(
                 "authorization",
-                MetadataValue::from_str(&header_value).map_err(|_| {
+                MetadataValue::try_from(&header_value).map_err(|_| {
                     tonic::Status::unauthenticated("token is not a valid header value")
                 })?,
             );
