@@ -13,7 +13,7 @@ pub(crate) struct ActivateJobsArgs {
     job_type: String,
 
     #[clap(short, long, default_value_t = 10)]
-    max_jobs_to_activate: u32,
+    max_jobs_to_activate: usize,
     #[clap(short= 't', long, default_value_t = 5 * 60 * 1000)]
     job_timeout: u64, // todo: should be duration
     #[clap(long, required = false, default_value = "worker")]
@@ -44,7 +44,7 @@ impl ExecuteZeebeCommand for ActivateJobsArgs {
         let args = &self;
         let request: ActivateJobsRequest = args.into();
         let mut stream = client.activate_jobs(request).await?.into_inner();
-        let mut result = Vec::with_capacity(args.max_jobs_to_activate.try_into().unwrap());
+        let mut result = Vec::with_capacity(args.max_jobs_to_activate);
         while let Some(response) = stream.message().await? {
             result.push(response);
         }
