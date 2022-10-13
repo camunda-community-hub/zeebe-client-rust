@@ -25,7 +25,7 @@ Run `cargo run -- help` to see available commands and options.
 
 **Authentication for Camunda Cloud**
 
-First, [generate and download](https://docs.camunda.io/docs/next/components/console/manage-clusters/manage-api-clients/) client credentials from Console. Let's assume they are in a file called credentials.txt.
+First, [generate and download](https://docs.camunda.io/docs/next/components/console/manage-clusters/manage-api-clients/) client credentials for Camunda Cloud. Let's assume they are in a file called credentials.txt.
 
 The `credentials.txt` file contains environment variables, so let's source them:
 ```shell
