@@ -1,10 +1,14 @@
-use std::str::FromStr;
+pub mod auth;
 
-use api::gateway_client::GatewayClient;
+use auth::{AuthInterceptor, OAuth2Config};
+use generated_api::gateway_client::GatewayClient;
+use oauth2::url::ParseError;
 use thiserror::Error;
+use tracing::instrument;
+
 use tonic::{
-    codegen::http::uri::InvalidUri,
-    transport::{self, Channel, Uri},
+    codegen::http::{self},
+    transport::{self, Channel, ClientTlsConfig, Uri},
 };
 
 mod generated_api {
@@ -15,9 +19,16 @@ pub mod api {
     pub use super::generated_api::*;
 }
 
-pub enum Connection {
-    Address(String),
-    HostPort(String, u16),
+#[derive(Debug, Clone)]
+pub struct Connection {
+    pub insecure: bool,
+    pub addr: String,
+}
+
+#[derive(Debug)]
+pub enum Authentication {
+    Unauthenticated,
+    Oauth2(OAuth2Config),
 }
 
 #[derive(Error, Debug)]
@@ -25,14 +36,39 @@ pub enum ConnectionError {
     #[error(transparent)]
     Transport(#[from] transport::Error),
     #[error(transparent)]
-    Uri(#[from] InvalidUri),
+    Http(#[from] http::Error),
+    #[error(transparent)]
+    Oauth2(#[from] ParseError),
 }
 
-pub async fn connect(conn: Connection) -> Result<GatewayClient<Channel>, ConnectionError> {
-    let uri = match conn {
-        Connection::Address(addr) => Uri::from_str(&addr),
-        Connection::HostPort(host, port) => Uri::from_str(&format!("http://{}:{}", host, port)),
-    }?;
-    let channel = Channel::builder(uri);
-    Ok(GatewayClient::new(channel.connect().await?))
+pub type ZeebeClient =
+    GatewayClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>;
+
+#[instrument(level = "debug")]
+pub async fn connect(
+    conn: Connection,
+    auth: Authentication,
+) -> Result<ZeebeClient, ConnectionError> {
+    let uri = Uri::builder()
+        .scheme(match conn.insecure {
+            true => "http",
+            false => "https",
+        })
+        .authority(conn.addr)
+        .path_and_query("")
+        .build()?;
+    let interceptor = match auth {
+        Authentication::Unauthenticated => AuthInterceptor::none(),
+        Authentication::Oauth2(oauth_config) => AuthInterceptor::oauth2(oauth_config)?,
+    };
+    tracing::debug!("Connecting to {}", uri);
+    let channel = if conn.insecure {
+        Channel::builder(uri)
+    } else {
+        Channel::builder(uri).tls_config(ClientTlsConfig::new())?
+    };
+    Ok(api::gateway_client::GatewayClient::with_interceptor(
+        channel.connect().await?,
+        interceptor,
+    ))
 }

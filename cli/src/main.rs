@@ -1,17 +1,48 @@
-use std::{fmt::Debug, path::PathBuf};
+mod activate_jobs;
+mod cancel_process_instance;
+mod complete_job;
+mod create_process_instance;
+mod deploy_resource;
+mod fail_job;
+mod publish_message;
+mod resolve_incident;
+mod set_variables;
+mod status;
+mod throw_error;
+mod update_retries;
 
-use clap::{AppSettings, Args, Parser, Subcommand};
+use std::fmt::Debug;
+
+use async_trait::async_trait;
+use clap::{AppSettings, Parser, Subcommand};
+
 use color_eyre::eyre::Result;
-
-use zeebe_client::api::{DeployResourceRequest, Resource, TopologyRequest};
+use zeebe_client::ZeebeClient;
 
 #[derive(Parser)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 struct Cli {
     #[clap(flatten)]
     connection: Connection,
+    #[clap(flatten)]
+    auth: Authentication,
     #[clap(subcommand)]
     command: Commands,
+}
+
+#[derive(Parser)]
+struct Authentication {
+    #[clap(long, value_parser, group = "authentication", env = "ZEEBE_CLIENT_ID")]
+    client_id: Option<String>,
+    #[clap(long, value_parser, env = "ZEEBE_CLIENT_SECRET")]
+    client_secret: Option<String>,
+    #[clap(
+        long,
+        value_parser,
+        env = "ZEEBE_AUTHORIZATION_SERVER_URL",
+        default_value = "https://login.cloud.camunda.io/oauth/token/"
+    )]
+    authorization_server: String,
 }
 
 #[derive(Parser)]
@@ -45,58 +76,127 @@ struct Connection {
 
 #[derive(Subcommand)]
 enum Commands {
-    Status,
-    Deploy(DeployArgs),
-}
+    // status
+    Status(status::StatusArgs), //aka topology
 
-#[derive(Args)]
-struct DeployArgs {
-    #[clap(required = true, value_parser, value_name = "FILE")]
-    resources: Vec<PathBuf>,
+    // deployment
+    DeployResource(deploy_resource::DeployResourceArgs),
+
+    // process instance
+    CreateProcessInstance(create_process_instance::CreateProcessInstanceArgs),
+    CancelProcessInstance(cancel_process_instance::CancelProcessInstanceArgs),
+
+    // message
+    PublishMessage(publish_message::PublishMessageArgs),
+
+    // incident
+    ResolveIncident(resolve_incident::ResolveIncidentArgs),
+
+    // variables
+    SetVariables(set_variables::SetVariablesArgs),
+
+    //jobs
+    ActivateJobs(activate_jobs::ActivateJobsArgs),
+    CompleteJob(complete_job::CompleteJobArgs),
+    FailJob(fail_job::FailJobArgs),
+    UpdateRetries(update_retries::UpdateRetriesArgs),
+    ThrowError(throw_error::ThrowErrorArgs),
 }
 
 impl From<Connection> for zeebe_client::Connection {
     fn from(conn: Connection) -> Self {
         match conn.address {
-            Some(addr) => zeebe_client::Connection::Address(addr),
-            None => zeebe_client::Connection::HostPort(conn.host, conn.port),
+            Some(addr) => zeebe_client::Connection {
+                insecure: conn.insecure,
+                addr,
+            },
+            None => zeebe_client::Connection {
+                insecure: conn.insecure,
+                addr: format!("{}:{}", conn.host, conn.port),
+            },
         }
     }
 }
 
+impl Authentication {
+    fn for_connection(
+        &self,
+        conn: &zeebe_client::Connection,
+    ) -> Result<zeebe_client::Authentication> {
+        match (&self.client_id, &self.client_secret) {
+            (None, None) => Ok(zeebe_client::Authentication::Unauthenticated),
+            (Some(client_id), Some(client_secret)) => {
+                let audience = conn
+                    .addr
+                    .rsplit_once(':')
+                    .map(|(authority, _port)| authority)
+                    .unwrap_or(&conn.addr)
+                    .to_owned();
+                Ok(zeebe_client::Authentication::Oauth2(
+                    zeebe_client::auth::OAuth2Config {
+                        client_id: client_id.clone(),
+                        client_secret: client_secret.clone(),
+                        auth_server: self.authorization_server.clone(),
+                        audience,
+                    },
+                ))
+            }
+            _ => Err(color_eyre::eyre::eyre!(
+                "Partial authentication info, needs at least client id and client secret"
+            )),
+        }
+    }
+}
+
+#[async_trait]
+trait ExecuteZeebeCommand {
+    type Output: Debug;
+    async fn execute(self, client: &mut ZeebeClient) -> Result<Self::Output>;
+}
+
+fn install_tracing() {
+    use tracing_error::ErrorLayer;
+    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::EnvFilter;
+    use tracing_tree::HierarchicalLayer;
+
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(HierarchicalLayer::new(2))
+        .with(ErrorLayer::default())
+        .init();
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    install_tracing();
+
     color_eyre::install()?;
+
     let cli: Cli = Cli::parse();
-    let mut client = zeebe_client::connect(cli.connection.into()).await?;
+    let conn: zeebe_client::Connection = cli.connection.into();
+    let mut client: ZeebeClient =
+        zeebe_client::connect(conn.clone(), cli.auth.for_connection(&conn)?).await?;
     let response: Box<dyn Debug> = match cli.command {
-        Commands::Status => Box::new(client.topology(TopologyRequest {}).await?.into_inner()),
-        Commands::Deploy(args) => Box::new(
-            client
-                .deploy_resource(build_deploy_request(args)?)
-                .await?
-                .into_inner(),
-        ),
+        Commands::ActivateJobs(args) => Box::new(args.execute(&mut client).await?),
+        Commands::CancelProcessInstance(args) => Box::new(args.execute(&mut client).await?),
+        Commands::CompleteJob(args) => Box::new(args.execute(&mut client).await?),
+        Commands::CreateProcessInstance(args) => args.execute(&mut client).await?, // Already boxed, because it could be one of two results
+        Commands::DeployResource(args) => Box::new(args.execute(&mut client).await?),
+        Commands::FailJob(args) => Box::new(args.execute(&mut client).await?),
+        Commands::PublishMessage(args) => Box::new(args.execute(&mut client).await?),
+        Commands::ResolveIncident(args) => Box::new(args.execute(&mut client).await?),
+        Commands::SetVariables(args) => Box::new(args.execute(&mut client).await?),
+        Commands::Status(args) => Box::new(args.execute(&mut client).await?),
+        Commands::ThrowError(args) => Box::new(args.execute(&mut client).await?),
+        Commands::UpdateRetries(args) => Box::new(args.execute(&mut client).await?),
     };
 
     println!("{:#?}", response);
 
     Ok(())
-}
-
-fn build_deploy_request(args: DeployArgs) -> Result<DeployResourceRequest> {
-    let mut resources = Vec::with_capacity(args.resources.len());
-    for path in &args.resources {
-        let resource = Resource {
-            name: path
-                .file_name()
-                .expect("resource path should point to a file")
-                .to_str()
-                .expect("file name should be UTF-8")
-                .to_string(),
-            content: std::fs::read(path)?,
-        };
-        resources.push(resource);
-    }
-    Ok(DeployResourceRequest { resources })
 }
