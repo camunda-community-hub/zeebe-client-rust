@@ -14,13 +14,13 @@ mod update_retries;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use clap::{AppSettings, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
 use color_eyre::eyre::Result;
 use zeebe_client::ZeebeClient;
 
 #[derive(Parser)]
-#[clap(global_setting(AppSettings::DeriveDisplayOrder))]
+#[clap()]
 struct Cli {
     #[clap(flatten)]
     connection: Connection,
