@@ -13,15 +13,15 @@ use crate::ExecuteZeebeCommand;
 
 #[derive(Args, Clone, Debug)]
 pub(crate) struct PublishMessageArgs {
-    #[clap(short, long)]
+    #[arg(short, long)]
     name: String,
-    #[clap(short, long)]
+    #[arg(short, long)]
     correlation_key: String,
-    #[clap(long, required = false)]
+    #[arg(long, required = false)]
     message_id: String,
-    #[clap(long, required = false, default_value = "")]
+    #[arg(long, required = false, default_value = "")]
     variables: String,
-    #[clap(long, required = false, default_value_t = -1)]
+    #[arg(long, required = false, default_value_t = -1)]
     ttl: i64, // todo: should be duration
 }
 

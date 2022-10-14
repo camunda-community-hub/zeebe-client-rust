@@ -12,13 +12,13 @@ use crate::ExecuteZeebeCommand;
 #[derive(Args)]
 pub(crate) struct ThrowErrorArgs {
     // the unique job identifier, as obtained when activating the job
-    #[clap(short, long)]
+    #[arg(short, long)]
     job_key: i64,
     // the error code that will be matched with an error catch event
-    #[clap(short = 'c', long)]
+    #[arg(short = 'c', long)]
     error_code: String,
     // an optional error message that provides additional context
-    #[clap(long, default_value = "")]
+    #[arg(long, default_value = "")]
     error_message: String,
 }
 

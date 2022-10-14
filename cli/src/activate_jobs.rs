@@ -12,13 +12,13 @@ use zeebe_client::{
 pub(crate) struct ActivateJobsArgs {
     job_type: String,
 
-    #[clap(short, long, default_value_t = 10)]
+    #[arg(short, long, default_value_t = 10)]
     max_jobs_to_activate: usize,
-    #[clap(short= 't', long, default_value_t = 5 * 60 * 1000)]
+    #[arg(short= 't', long, default_value_t = 5 * 60 * 1000)]
     job_timeout: u64, // todo: should be duration
-    #[clap(long, required = false, default_value = "worker")]
+    #[arg(long, required = false, default_value = "worker")]
     worker: String,
-    #[clap(long, required = false)]
+    #[arg(long, required = false)]
     variables: Vec<String>,
 }
 

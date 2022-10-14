@@ -32,13 +32,12 @@ struct Cli {
 
 #[derive(Parser)]
 struct Authentication {
-    #[clap(long, value_parser, group = "authentication", env = "ZEEBE_CLIENT_ID")]
+    #[arg(long, group = "authentication", env = "ZEEBE_CLIENT_ID")]
     client_id: Option<String>,
-    #[clap(long, value_parser, env = "ZEEBE_CLIENT_SECRET")]
+    #[arg(long, env = "ZEEBE_CLIENT_SECRET")]
     client_secret: Option<String>,
-    #[clap(
+    #[arg(
         long,
-        value_parser,
         env = "ZEEBE_AUTHORIZATION_SERVER_URL",
         default_value = "https://login.cloud.camunda.io/oauth/token/"
     )]
@@ -46,15 +45,15 @@ struct Authentication {
 }
 
 #[derive(Parser)]
-#[clap(group = clap::ArgGroup::new("connection"))]
+#[command(group = clap::ArgGroup::new("connection"))]
 struct Connection {
-    #[clap(long)]
+    #[arg(long)]
     insecure: bool,
 
-    #[clap(long, value_parser, group = "connection", env = "ZEEBE_ADDRESS")]
+    #[arg(long, group = "connection", env = "ZEEBE_ADDRESS")]
     address: Option<String>,
 
-    #[clap(
+    #[arg(
         short,
         long,
         group = "connection",
@@ -63,7 +62,7 @@ struct Connection {
         env = "ZEEBE_HOST"
     )]
     host: String,
-    #[clap(
+    #[arg(
         short,
         long,
         group = "connection",

@@ -13,7 +13,7 @@ use color_eyre::Result;
 
 #[derive(Args)]
 pub(crate) struct DeployResourceArgs {
-    #[clap(required = true, value_parser, value_name = "FILE")]
+    #[arg(required = true, value_name = "FILE")]
     resources: Vec<PathBuf>,
 }
 #[async_trait]

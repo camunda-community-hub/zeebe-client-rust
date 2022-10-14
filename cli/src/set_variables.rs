@@ -13,13 +13,13 @@ use zeebe_client::{
 #[derive(Args)]
 
 pub(crate) struct SetVariablesArgs {
-    #[clap(short, long)]
+    #[arg(short, long)]
     element_instance_key: i64,
-    #[clap(short, long)]
+    #[arg(short, long)]
     local: bool,
-    #[clap(long, value_parser, group = "value")]
+    #[arg(long, group = "value")]
     path: Option<PathBuf>,
-    #[clap(long, group = "value")]
+    #[arg(long, group = "value")]
     json: Option<String>,
 }
 
@@ -32,7 +32,7 @@ impl TryFrom<SetVariablesArgs> for SetVariablesRequest {
         } else if let Some(json) = args.json {
             json
         } else {
-            unreachable!()
+            unreachable!("asd")
         };
         Ok(Self {
             element_instance_key: args.element_instance_key,

@@ -11,7 +11,7 @@ use zeebe_client::{
 pub(crate) struct CompleteJobArgs {
     job_key: i64,
 
-    #[clap(long, required = false, default_value = "")]
+    #[arg(long, required = false, default_value = "")]
     variables: String,
 }
 
