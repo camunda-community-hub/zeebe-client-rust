@@ -32,7 +32,7 @@ impl TryFrom<SetVariablesArgs> for SetVariablesRequest {
         } else if let Some(json) = args.json {
             json
         } else {
-            unreachable!("asd")
+            unreachable!("Should be a path or a JSON string")
         };
         Ok(Self {
             element_instance_key: args.element_instance_key,
