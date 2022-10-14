@@ -11,11 +11,11 @@ use zeebe_client::{
 pub(crate) struct CreateProcessInstanceArgs {
     process_instance_key: i64,
 
-    #[clap(long, required = false)]
+    #[arg(long, required = false)]
     with_results: bool,
-    #[clap(long, required = false, default_value = "")]
+    #[arg(long, required = false, default_value = "")]
     variables: String,
-    #[clap(long, required = false, default_value_t = -1)]
+    #[arg(long, required = false, default_value_t = -1)]
     version: i32,
 }
 

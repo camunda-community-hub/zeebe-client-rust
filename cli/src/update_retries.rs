@@ -10,9 +10,9 @@ use zeebe_client::{
 
 #[derive(Debug, Args)]
 pub(crate) struct UpdateRetriesArgs {
-    #[clap(short, long)]
+    #[arg(short, long)]
     job_key: u64,
-    #[clap(short, long)]
+    #[arg(short, long)]
     retries: u32,
 }
 
