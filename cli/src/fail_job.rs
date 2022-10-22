@@ -24,6 +24,8 @@ pub(crate) struct FailJobArgs {
     // the back off timeout for the next retry
     #[arg(long, required = false, default_value_t = 0)]
     retry_back_off: i64,
+    #[arg(long, required = false, default_value = "")]
+    variables: String,
 }
 
 impl From<&FailJobArgs> for FailJobRequest {
@@ -33,6 +35,7 @@ impl From<&FailJobArgs> for FailJobRequest {
             retries: args.retries,
             error_message: args.error_message.to_owned(),
             retry_back_off: args.retry_back_off,
+            variables: args.variables.clone(),
         }
     }
 }
