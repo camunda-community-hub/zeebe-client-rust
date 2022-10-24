@@ -54,7 +54,6 @@ struct Connection {
     address: Option<String>,
 
     #[arg(
-        short,
         long,
         group = "connection",
         conflicts_with = "address",
@@ -63,7 +62,6 @@ struct Connection {
     )]
     host: String,
     #[arg(
-        short,
         long,
         group = "connection",
         conflicts_with = "address",
