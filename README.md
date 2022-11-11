@@ -63,7 +63,6 @@ These repositories also implement Zeebe clients for Rust. Most of them are more 
 
 Your best choice is probably: https://github.com/OutThereLabs/zeebe-rust
 
-
 # Developer Guide
 
 ## CLI
