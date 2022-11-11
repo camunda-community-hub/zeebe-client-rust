@@ -12,8 +12,8 @@ Features
 * Support for OAuth authentication
 
 Next Steps
-1. Worker implementation
-2. Publish crates
+1. Publish crates
+2. Worker implementation
 3. Build an application that uses this Rust client
 
 ## Cli Tool
