@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 zeebe-client = { path = "../client" }
-clap = { version = "4.0", features = ["derive", "env"] }
+clap = { version = "4.1", features = ["derive", "env"] }
 color-eyre = "0.6"
 tonic = { version = "0.8", features = ["tls", "tls-roots", "gzip"] }
 tokio = { version = "1", features=["full"] }
