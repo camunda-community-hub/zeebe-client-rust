@@ -12,4 +12,4 @@ oauth2 = { version = "4.3.0", features = ["ureq"] }
 
 [build-dependencies]
 tonic-build = { version = "0.8" }
-prost-build = "0.11"
+prost-build = "0.12"
