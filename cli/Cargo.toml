@@ -12,5 +12,5 @@ tokio = { version = "1", features=["full"] }
 tracing = { version="0.1.37", features = ["async-await", "log"] }
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 tracing-error = { version = "0.2", features = ["traced-error"] }
-tracing-tree = { version = "0.2" }
+tracing-tree = { version = "0.4" }
 async-trait = "0.1.66"
