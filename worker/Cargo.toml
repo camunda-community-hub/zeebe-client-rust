@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 zeebe-client = { path = "../client" }
-tonic = "0.8"
+tonic = "0.12.3"
 tokio = { version = "1", features=["full"] }
